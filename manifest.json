@@ -1,0 +1,40 @@
+{
+    "manifest_version": 3,
+    "name": "Chzzk Multivewer - QY",
+    "version": "1.0.0",
+    "description":"방송 여러개 띄워서 보는 멀티뷰 크롬 확장프로그램",
+    "permissions":[
+        "storage",
+        "tabs",
+        "declarativeNetRequest",
+        "cookies"
+    ],
+    "host_permissions": [
+        "https://api.chzzk.naver.com/*",
+        "https://chzzk.naver.com/*",
+        "https://*.naver.com/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "icons": {
+        "16":  "icon16.png",
+        "48":  "icon48.png",
+        "128": "icon128.png"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "32": "icon32.png"
+        }
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://chzzk.naver.com/live/*"],
+            "js": ["content.js"],
+            "run_at": "document_end",
+            "all_frames": true
+        }
+    ]
+}
