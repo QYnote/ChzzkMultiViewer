@@ -253,6 +253,23 @@
       color: #00c73c;
     }
 
+    /* 서브 채널 딜레이 + 새로고침 묶음 */
+    .sub-refresh-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .sub-latency-label {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.75);
+      white-space: nowrap;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* 볼륨 슬라이더 */
     .vol-slider {
       flex: 1;
@@ -356,8 +373,16 @@
       color: #c9cdd4;
     }
 
-    #btn-main-refresh {
+    #main-latency {
       margin-left: auto;
+      font-size: 11px;
+      color: #4b5563;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    #btn-main-refresh {
+      margin-left: 4px;
       background: none;
       color: #4b5563;
       border: none;
@@ -479,6 +504,7 @@
       <div id="main-info-bar">
         <span class="live-dot"></span>
         <span id="main-streamer-name">—</span>
+        <span id="main-latency"></span>
         <button id="btn-main-refresh">↻ 새로고침</button>
       </div>
     </section>

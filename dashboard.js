@@ -15,13 +15,37 @@ const chatEmptyNotice  = document.getElementById('chat-empty-notice');
 const chatStreamerLabel = document.getElementById('chat-streamer-label');
 const streamerCountEl  = document.getElementById('streamer-count');
 const syncBadge        = document.getElementById('sync-badge');
+const mainLatencyEl    = document.getElementById('main-latency');
 
-let currentMain   = null;
-let autoSyncTimer = null;
-let mainIframe    = null;
+let currentMain      = null;
+let mainIframe       = null;
+let autoSyncSettings = { isAutoSync: false, limitSeconds: 10 };
+let lastLatencyTime  = 0;
+let noSignalTimer    = null;
 
 // 메인 플레이어 볼륨 추적 (content.js → dashboard postMessage)
 window.addEventListener('message', (e) => {
+  if (e.data?.type === 'chzzk-mv-latency') {
+    const sec = e.data.v;
+    const text = `딜레이 ${sec.toFixed(1)}s`;
+    if (e.source === mainIframe?.contentWindow) {
+      if (mainLatencyEl) mainLatencyEl.textContent = text;
+      lastLatencyTime = Date.now();
+      // 딜레이가 기준치 초과 시 새로고침
+      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds) {
+        mainIframe.src = mainIframe.src;
+        lastLatencyTime = Date.now();
+      }
+    } else {
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (e.source === tile._iframe?.contentWindow) {
+          const label = tile.querySelector('.sub-latency-label');
+          if (label) label.textContent = text;
+        }
+      });
+    }
+    return;
+  }
   if (e.data?.type !== 'chzzk-mv-vol') return;
   console.log('[mv-vol] 수신:', e.data.v, '| mainIframe 있음:', !!mainIframe, '| source 일치:', e.source === mainIframe?.contentWindow);
   if (!mainIframe) return;
@@ -38,6 +62,7 @@ window.addEventListener('message', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();
   initButtonEvents();
+  restoreChatState();
 });
 
 // ==========================================
@@ -134,7 +159,10 @@ function createSubOverlay(name, iframe, tile) {
     <div class="sub-controls">
       <button class="btn-ctrl btn-mute-toggle" title="음소거 토글">🔇</button>
       <input type="range" class="vol-slider" min="0" max="100" value="0" title="볼륨 조절">
-      <button class="btn-ctrl btn-sub-refresh" title="새로고침">↻</button>
+      <div class="sub-refresh-wrapper">
+        <span class="sub-latency-label"></span>
+        <button class="btn-ctrl btn-sub-refresh" title="새로고침">↻</button>
+      </div>
     </div>
   `;
 
@@ -266,17 +294,24 @@ function swapWithMain(clickedTile, subStreamer) {
 }
 
 // ==========================================
-// 자동 동기화 타이머
+// 자동 동기화
+// - 딜레이 >= limitSeconds 이면 새로고침
+// - 30초간 딜레이 신호 없으면 스트림 멈춤으로 판단 → 새로고침
 // ==========================================
 function applyAutoSync(settings) {
-  if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+  autoSyncSettings = settings;
+  if (noSignalTimer) { clearInterval(noSignalTimer); noSignalTimer = null; }
 
   if (settings.isAutoSync && settings.limitSeconds > 0) {
     syncBadge.classList.add('active');
-    syncBadge.textContent = `↺ 자동동기화 ${settings.limitSeconds}초`;
-    autoSyncTimer = setInterval(() => {
-      if (mainIframe) mainIframe.src = mainIframe.src;
-    }, settings.limitSeconds * 1000);
+    syncBadge.textContent = `↺ 자동동기화 (${settings.limitSeconds}s 초과 시)`;
+    lastLatencyTime = Date.now();
+    noSignalTimer = setInterval(() => {
+      if (mainIframe && Date.now() - lastLatencyTime > 10000) {
+        mainIframe.src = mainIframe.src;
+        lastLatencyTime = Date.now();
+      }
+    }, 5000);
   } else {
     syncBadge.classList.remove('active');
     syncBadge.textContent = '';
@@ -303,6 +338,18 @@ function showMainEmpty() {
 // ==========================================
 // 버튼 이벤트
 // ==========================================
+// ==========================================
+// 채팅 숨김 상태 복원
+// ==========================================
+function restoreChatState() {
+  chrome.storage.local.get(['dashboardChatHidden'], (result) => {
+    if (result.dashboardChatHidden) {
+      colChat.classList.add('chat-hidden');
+      if (btnToggleChat) btnToggleChat.textContent = '💬 채팅 보기';
+    }
+  });
+}
+
 function initButtonEvents() {
   btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
@@ -313,6 +360,7 @@ function initButtonEvents() {
   btnToggleChat?.addEventListener('click', () => {
     const hidden = colChat.classList.toggle('chat-hidden');
     btnToggleChat.textContent = hidden ? '💬 채팅 보기' : '💬 채팅 숨기기';
+    chrome.storage.local.set({ dashboardChatHidden: hidden });
   });
 
   // ── 서브채널 너비 리사이즈 ──

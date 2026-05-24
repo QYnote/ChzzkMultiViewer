@@ -8,6 +8,24 @@
 
   let forceMuted = params.get('mute') === '1';
 
+  // ── 딜레이 측정 ──
+  let latencyTimer = null;
+
+  function startLatencyReporting(v) {
+    if (latencyTimer) return;
+    latencyTimer = setInterval(() => {
+      try {
+        if (v.seekable.length > 0) {
+          const liveEdge = v.seekable.end(v.seekable.length - 1);
+          const latency  = liveEdge - v.currentTime;
+          if (latency >= 0) {
+            window.parent.postMessage({ type: 'chzzk-mv-latency', v: latency }, '*');
+          }
+        }
+      } catch (e) {}
+    }, 1000);
+  }
+
   // ── 볼륨 적용 ──
   const guardedVideos = new WeakSet();
 
@@ -35,6 +53,7 @@
       }, true);
 
       applyVolume(v, forceMuted ? 0 : 1);
+      startLatencyReporting(v);
 
       const onPlaying = () => setTimeout(triggerWideMode, 2000);
       if (!v.paused && v.currentTime > 0) {
