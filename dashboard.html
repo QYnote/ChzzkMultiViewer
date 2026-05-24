@@ -428,17 +428,54 @@
       background: #1e2028;
     }
 
-    /* ── 서브채널 리사이즈 핸들 ── */
+    /* ── 서브채널 리사이즈 핸들 + 접기 버튼 ── */
     .resize-handle {
-      width: 4px;
-      background: #1e2028;
+      width: 14px;
+      background: transparent;
       cursor: col-resize;
       flex-shrink: 0;
-      transition: background 0.15s;
       z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
     }
-    .resize-handle:hover, .resize-handle.dragging {
-      background: #00c73c;
+
+    .btn-sub-collapse {
+      width: 14px;
+      height: 40px;
+      background: #1e2028;
+      border: 1px solid #2a2d38;
+      border-left: none;
+      color: #4b5563;
+      cursor: pointer;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0 5px 5px 0;
+      transition: background 0.1s, color 0.1s;
+      flex-shrink: 0;
+      z-index: 11;
+    }
+
+    .btn-sub-collapse:hover {
+      background: #2a2d38;
+      color: #00c73c;
+    }
+
+    .resize-handle.dragging .btn-sub-collapse {
+      pointer-events: none;
+    }
+
+    /* ── 서브채널 접힘 상태 ── */
+    .col-sub {
+      transition: width 0.2s ease, min-width 0.2s ease;
+    }
+
+    .col-sub.sub-collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
     }
 
     /* ── 우측: 채팅 ── */
@@ -495,6 +532,125 @@
       padding: 20px 10px;
       line-height: 1.8;
     }
+
+    /* ── 레이아웃 2: 반전형 (서브 오른쪽, 채팅 왼쪽) ── */
+    .layout-wrapper[data-layout="2"] .col-chat {
+      order: 1;
+      border-left: none;
+      border-right: 1px solid #1e2028;
+    }
+    .layout-wrapper[data-layout="2"] .col-main  { order: 2; }
+    .layout-wrapper[data-layout="2"] .resize-handle { order: 3; }
+    .layout-wrapper[data-layout="2"] .col-sub {
+      order: 4;
+      border-right: none;
+      border-left: 1px solid #1e2028;
+    }
+    .layout-wrapper[data-layout="2"] .btn-sub-collapse {
+      border-right: none;
+      border-left: 1px solid #2a2d38;
+      border-radius: 5px 0 0 5px;
+    }
+
+    /* ── 레이아웃 3/4: 서브 가로 스트립 (3행 그리드: 메인 | 핸들 | 서브) ── */
+    .layout-wrapper[data-layout="3"],
+    .layout-wrapper[data-layout="4"] {
+      display: grid;
+      grid-template-columns: 1fr auto;
+    }
+    /* grid-template-rows는 JS에서 inline style로 직접 제어 (행 자체가 줄어야 하므로) */
+    .layout-wrapper[data-layout="3"] { grid-template-rows: 1fr 14px 148px; transition: grid-template-rows 0.2s ease; }
+    .layout-wrapper[data-layout="4"] { grid-template-rows: 148px 14px 1fr; transition: grid-template-rows 0.2s ease; }
+
+    .layout-wrapper[data-layout="3"] .col-sub,
+    .layout-wrapper[data-layout="4"] .col-sub {
+      grid-column: 1 / 3;
+      width: auto !important;
+      min-width: unset !important;
+      height: 148px;
+      flex-direction: row;
+      border-right: none;
+      overflow: hidden;
+      transition: height 0.2s ease;
+    }
+    .layout-wrapper[data-layout="3"] .col-sub { grid-row: 3; border-top: 1px solid #1e2028; }
+    .layout-wrapper[data-layout="4"] .col-sub { grid-row: 1; border-bottom: 1px solid #1e2028; }
+
+    /* 접힘 상태: width 대신 height 를 0으로 */
+    .layout-wrapper[data-layout="3"] .col-sub.sub-collapsed,
+    .layout-wrapper[data-layout="4"] .col-sub.sub-collapsed {
+      width: auto !important;
+      min-width: unset !important;
+      height: 0 !important;
+      min-height: 0 !important;
+    }
+
+    .layout-wrapper[data-layout="3"] .col-sub .col-header,
+    .layout-wrapper[data-layout="4"] .col-sub .col-header { display: none; }
+
+    .layout-wrapper[data-layout="3"] #sub-stream-list,
+    .layout-wrapper[data-layout="4"] #sub-stream-list {
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 4px 8px;
+      align-items: stretch;
+    }
+    .layout-wrapper[data-layout="3"] .sub-tile,
+    .layout-wrapper[data-layout="4"] .sub-tile {
+      width: auto !important;
+      height: 100%;
+      flex-shrink: 0;
+    }
+
+    .layout-wrapper[data-layout="3"] .col-main { grid-column: 1; grid-row: 1; }
+    .layout-wrapper[data-layout="4"] .col-main { grid-column: 1; grid-row: 3; }
+    /* width: 20vw → 레이아웃 1/2의 width:20% 와 동일 (vw는 셀 너비 기준이 아닌 뷰포트 기준) */
+    .layout-wrapper[data-layout="3"] .col-chat { grid-column: 2; grid-row: 1; width: 20vw; }
+    .layout-wrapper[data-layout="4"] .col-chat { grid-column: 2; grid-row: 3; width: 20vw; }
+
+    .layout-wrapper[data-layout="3"] .resize-handle,
+    .layout-wrapper[data-layout="4"] .resize-handle { display: none; }
+
+    /* ── 수평 접기 핸들 (레이아웃 3/4 전용) ── */
+    .hresize-handle {
+      display: none;
+    }
+    .layout-wrapper[data-layout="3"] .hresize-handle,
+    .layout-wrapper[data-layout="4"] .hresize-handle {
+      grid-column: 1 / 3;
+      grid-row: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0d0e12;
+      z-index: 10;
+    }
+    .layout-wrapper[data-layout="3"] .hresize-handle { border-bottom: 1px solid #1e2028; }
+    .layout-wrapper[data-layout="4"] .hresize-handle { border-top: 1px solid #1e2028; }
+
+    .btn-sub-hcollapse {
+      width: 44px;
+      height: 14px;
+      background: #1e2028;
+      border: 1px solid #2a2d38;
+      color: #4b5563;
+      cursor: pointer;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+    }
+    .layout-wrapper[data-layout="3"] .btn-sub-hcollapse {
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+    }
+    .layout-wrapper[data-layout="4"] .btn-sub-hcollapse {
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+    }
+    .btn-sub-hcollapse:hover { background: #2a2d38; color: #00c73c; }
   </style>
 </head>
 <body>
@@ -521,8 +677,15 @@
       <div id="sub-stream-list"></div>
     </aside>
 
-    <!-- 서브채널 너비 조절 핸들 -->
-    <div class="resize-handle" id="resize-handle"></div>
+    <!-- 서브채널 너비 조절 핸들 (레이아웃 1/2 전용) -->
+    <div class="resize-handle" id="resize-handle">
+      <button class="btn-sub-collapse" id="btn-sub-collapse" title="서브채널 접기/펼치기">◀</button>
+    </div>
+
+    <!-- 수평 서브채널 접기 핸들 (레이아웃 3/4 전용) -->
+    <div class="hresize-handle" id="hresize-handle">
+      <button class="btn-sub-hcollapse" id="btn-sub-hcollapse" title="서브채널 접기/펼치기">▼</button>
+    </div>
 
     <!-- 중앙: 메인 플레이어 -->
     <section class="col-main">

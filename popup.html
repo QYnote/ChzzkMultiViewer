@@ -73,6 +73,23 @@
     button:hover { background-color: #00a832; }
     .btn-secondary { background-color: #6c757d; margin-top: 10px; }
     .btn-secondary:hover { background-color: #5a6268; }
+
+    /* 레이아웃 선택 옵션 */
+    .layout-opt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      padding: 6px 8px;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .layout-opt:hover { border-color: #adb5bd; }
+    .layout-opt.active {
+      border-color: #00c73c;
+      background: rgba(0, 199, 60, 0.06);
+    }
   </style>
 </head>
 <body>
@@ -132,6 +149,71 @@
 
   <!-- 탭 4: 기타 설정 -->
   <div id="tab4" class="tab-content">
+
+    <!-- 레이아웃 선택 -->
+    <div style="margin-bottom: 16px;">
+      <label style="display:block; font-size:11px; font-weight:bold; margin-bottom:8px;">대시보드 레이아웃</label>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+        <div class="layout-opt" data-layout="1" title="기본형">
+          <div style="display:flex; gap:2px; width:68px; height:42px;">
+            <div style="width:14px; background:#adb5bd; border-radius:2px; display:flex; flex-direction:column; gap:2px; padding:2px;">
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+            </div>
+            <div style="flex:1; background:#6c757d; border-radius:2px;"></div>
+            <div style="width:14px; background:#adb5bd; border-radius:2px;"></div>
+          </div>
+          <span style="font-size:9px; margin-top:3px;">기본형</span>
+        </div>
+
+        <div class="layout-opt" data-layout="2" title="반전형">
+          <div style="display:flex; gap:2px; width:68px; height:42px;">
+            <div style="width:14px; background:#adb5bd; border-radius:2px;"></div>
+            <div style="flex:1; background:#6c757d; border-radius:2px;"></div>
+            <div style="width:14px; background:#adb5bd; border-radius:2px; display:flex; flex-direction:column; gap:2px; padding:2px;">
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+              <div style="height:10px; background:#dee2e6; border-radius:1px;"></div>
+            </div>
+          </div>
+          <span style="font-size:9px; margin-top:3px;">반전형</span>
+        </div>
+
+        <div class="layout-opt" data-layout="3" title="서브하단">
+          <div style="display:flex; flex-direction:column; gap:2px; width:68px; height:42px;">
+            <div style="flex:1; display:flex; gap:2px;">
+              <div style="flex:1; background:#6c757d; border-radius:2px;"></div>
+              <div style="width:14px; background:#adb5bd; border-radius:2px;"></div>
+            </div>
+            <div style="height:10px; display:flex; gap:2px;">
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+            </div>
+          </div>
+          <span style="font-size:9px; margin-top:3px;">서브하단</span>
+        </div>
+
+        <div class="layout-opt" data-layout="4" title="서브상단">
+          <div style="display:flex; flex-direction:column; gap:2px; width:68px; height:42px;">
+            <div style="height:10px; display:flex; gap:2px;">
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+              <div style="flex:1; background:#adb5bd; border-radius:2px;"></div>
+            </div>
+            <div style="flex:1; display:flex; gap:2px;">
+              <div style="flex:1; background:#6c757d; border-radius:2px;"></div>
+              <div style="width:14px; background:#adb5bd; border-radius:2px;"></div>
+            </div>
+          </div>
+          <span style="font-size:9px; margin-top:3px;">서브상단</span>
+        </div>
+
+      </div>
+    </div>
+
     <div class="input-group" style="display: flex; align-items: center; margin-top: 15px;">
       <input type="checkbox" id="chk-auto-sync" style="width: auto; margin-right: 10px;">
       <label for="chk-auto-sync" style="margin-bottom: 0; cursor: pointer;">방송 자동 동기화(새로고침) 활성화</label>

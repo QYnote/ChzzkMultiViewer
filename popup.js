@@ -48,7 +48,7 @@ function initTabEvent() {
 // 4. 로컬 스토리지 데이터 로드 및 화면 렌더링
 // ==========================================
 function loadAndRenderData() {
-  chrome.storage.local.get(['currentViewList', 'favoriteMasterList', 'systemSettings'], (result) => {
+  chrome.storage.local.get(['currentViewList', 'favoriteMasterList', 'systemSettings', 'dashboardLayout'], (result) => {
     const currentList = result.currentViewList || [];
     renderStreamerList(currentViewListDiv, currentList, 'current');
 
@@ -58,6 +58,11 @@ function loadAndRenderData() {
     const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10 };
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;
     if (numLimitSeconds) numLimitSeconds.value = settings.limitSeconds;
+
+    const activeLayout = result.dashboardLayout || 1;
+    document.querySelectorAll('.layout-opt').forEach(opt => {
+      opt.classList.toggle('active', parseInt(opt.dataset.layout) === activeLayout);
+    });
   });
 }
 
@@ -269,6 +274,14 @@ function initButtonEvents() {
       });
     });
   }
+
+  document.querySelectorAll('.layout-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.layout-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      chrome.storage.local.set({ dashboardLayout: parseInt(opt.dataset.layout) });
+    });
+  });
 
   if (chkAutoSync) chkAutoSync.addEventListener('change', saveSettings);
   if (numLimitSeconds) numLimitSeconds.addEventListener('input', saveSettings);

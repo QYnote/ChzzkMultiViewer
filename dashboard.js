@@ -16,6 +16,8 @@ const chatStreamerLabel = document.getElementById('chat-streamer-label');
 const streamerCountEl  = document.getElementById('streamer-count');
 const syncBadge        = document.getElementById('sync-badge');
 const mainLatencyEl    = document.getElementById('main-latency');
+const btnSubCollapse   = document.getElementById('btn-sub-collapse');
+const btnSubHCollapse  = document.getElementById('btn-sub-hcollapse');
 
 let currentMain      = null;
 let mainIframe       = null;
@@ -63,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();
   initButtonEvents();
   restoreChatState();
+  restoreLayoutState(); // restoreSubPanelState는 내부에서 레이아웃 적용 후 호출됨
 });
 
 // ==========================================
@@ -368,6 +371,51 @@ function restoreChatState() {
   });
 }
 
+function restoreLayoutState() {
+  chrome.storage.local.get(['dashboardLayout'], (result) => {
+    const layout = String(result.dashboardLayout || 1);
+    document.querySelector('.layout-wrapper').dataset.layout = layout;
+    restoreSubPanelState();
+  });
+}
+
+function updateHCollapseBtn(layout, collapsed) {
+  if (!btnSubHCollapse) return;
+  // 레이아웃 3: 서브가 하단 → 접히면 ▲(펼치기), 보이면 ▼(접기)
+  // 레이아웃 4: 서브가 상단 → 접히면 ▼(펼치기), 보이면 ▲(접기)
+  if (layout === '3') {
+    btnSubHCollapse.textContent = collapsed ? '▲' : '▼';
+  } else if (layout === '4') {
+    btnSubHCollapse.textContent = collapsed ? '▼' : '▲';
+  }
+}
+
+function applySubRows(wrapper, layout, collapsed) {
+  if (layout === '3') {
+    wrapper.style.gridTemplateRows = collapsed ? '1fr 14px 0px' : '1fr 14px 148px';
+  } else if (layout === '4') {
+    wrapper.style.gridTemplateRows = collapsed ? '0px 14px 1fr' : '148px 14px 1fr';
+  }
+}
+
+function restoreSubPanelState() {
+  chrome.storage.local.get(['subPanelCollapsed'], (result) => {
+    const wrapper = document.querySelector('.layout-wrapper');
+    const layout = wrapper.dataset.layout || '1';
+    const collapsed = !!result.subPanelCollapsed;
+    if (collapsed) colSub.classList.add('sub-collapsed');
+    applySubRows(wrapper, layout, collapsed);
+    // 레이아웃 1/2: 좌우 접기 버튼
+    if (btnSubCollapse) {
+      btnSubCollapse.textContent = layout === '2'
+        ? (collapsed ? '◀' : '▶')
+        : (collapsed ? '▶' : '◀');
+    }
+    // 레이아웃 3/4: 상하 접기 버튼
+    updateHCollapseBtn(layout, collapsed);
+  });
+}
+
 function initButtonEvents() {
   btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
@@ -381,10 +429,33 @@ function initButtonEvents() {
     chrome.storage.local.set({ dashboardChatHidden: hidden });
   });
 
+  // ── 서브채널 접기/펼치기 ──
+  btnSubCollapse?.addEventListener('mousedown', (e) => e.stopPropagation());
+  btnSubCollapse?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const layout = document.querySelector('.layout-wrapper').dataset.layout || '1';
+    const collapsed = colSub.classList.toggle('sub-collapsed');
+    btnSubCollapse.textContent = layout === '2'
+      ? (collapsed ? '◀' : '▶')
+      : (collapsed ? '▶' : '◀');
+    chrome.storage.local.set({ subPanelCollapsed: collapsed });
+  });
+
+  // ── 서브채널 수평 접기/펼치기 (레이아웃 3/4) ──
+  btnSubHCollapse?.addEventListener('click', () => {
+    const wrapper = document.querySelector('.layout-wrapper');
+    const layout = wrapper.dataset.layout || '1';
+    const collapsed = colSub.classList.toggle('sub-collapsed');
+    applySubRows(wrapper, layout, collapsed);
+    updateHCollapseBtn(layout, collapsed);
+    chrome.storage.local.set({ subPanelCollapsed: collapsed });
+  });
+
   // ── 서브채널 너비 리사이즈 ──
   let isResizing = false;
 
   resizeHandle?.addEventListener('mousedown', (e) => {
+    if (colSub.classList.contains('sub-collapsed')) return;
     isResizing = true;
     resizeHandle.classList.add('dragging');
     document.body.style.cursor = 'col-resize';
@@ -396,8 +467,12 @@ function initButtonEvents() {
 
   document.addEventListener('mousemove', (e) => {
     if (!isResizing) return;
-    const wrapperLeft = document.querySelector('.layout-wrapper').getBoundingClientRect().left;
-    const newWidth = Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - wrapperLeft));
+    const wrapper = document.querySelector('.layout-wrapper');
+    const rect = wrapper.getBoundingClientRect();
+    const layout = wrapper.dataset.layout || '1';
+    const newWidth = layout === '2'
+      ? Math.max(120, Math.min(window.innerWidth * 0.3, rect.right - e.clientX))
+      : Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - rect.left));
     colSub.style.width = newWidth + 'px';
     colSub.style.minWidth = newWidth + 'px';
   });

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Compress-Archive -Path manifest.json, background.js, content.js, popup.html, popup.js, dashboard.html, dashboard.js, icon16.png, icon32.png, icon48.png, icon128.png, README.md -DestinationPath '..\\\\release\\\\ChzzkMultiViewer_v1.0.2.zip' -Force\")"
+    ]
+  }
+}
