@@ -1,11 +1,15 @@
 // ── DOM 요소 ──
 const colMain          = document.querySelector('.col-main');
+const colSub           = document.querySelector('.col-sub');
+const colChat          = document.querySelector('.col-chat');
 const subStreamList    = document.getElementById('sub-stream-list');
 const mainEmptyNotice  = document.getElementById('main-empty-notice');
 const mainInfoBar      = document.getElementById('main-info-bar');
 const mainStreamerName = document.getElementById('main-streamer-name');
 const btnMainRefresh   = document.getElementById('btn-main-refresh');
 const btnReloadAll     = document.getElementById('btn-reload-all');
+const btnToggleChat    = document.getElementById('btn-toggle-chat');
+const resizeHandle     = document.getElementById('resize-handle');
 const chatFrame        = document.getElementById('chat-frame');
 const chatEmptyNotice  = document.getElementById('chat-empty-notice');
 const chatStreamerLabel = document.getElementById('chat-streamer-label');
@@ -303,5 +307,41 @@ function initButtonEvents() {
   btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
     if (mainIframe) mainIframe.src = mainIframe.src;
+  });
+
+  // ── 채팅 토글 ──
+  btnToggleChat?.addEventListener('click', () => {
+    const hidden = colChat.classList.toggle('chat-hidden');
+    btnToggleChat.textContent = hidden ? '💬 채팅 보기' : '💬 채팅 숨기기';
+  });
+
+  // ── 서브채널 너비 리사이즈 ──
+  let isResizing = false;
+
+  resizeHandle?.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    resizeHandle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    // 드래그 중 iframe이 마우스 이벤트 가로채지 않도록
+    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const wrapperLeft = document.querySelector('.layout-wrapper').getBoundingClientRect().left;
+    const newWidth = Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - wrapperLeft));
+    colSub.style.width = newWidth + 'px';
+    colSub.style.minWidth = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizeHandle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
   });
 }

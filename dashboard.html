@@ -116,12 +116,12 @@
     .col-sub {
       width: 22%;
       min-width: 160px;
-      max-width: 280px;
       background: #0d0e12;
       border-right: 1px solid #1e2028;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      overflow: hidden;
     }
 
     .col-header {
@@ -155,11 +155,9 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      scrollbar-width: none;
     }
-
-    #sub-stream-list::-webkit-scrollbar { width: 3px; }
-    #sub-stream-list::-webkit-scrollbar-track { background: transparent; }
-    #sub-stream-list::-webkit-scrollbar-thumb { background: #2a2d38; border-radius: 2px; }
+    #sub-stream-list::-webkit-scrollbar { display: none; }
 
     /* ── 서브 타일 ── */
     .sub-tile {
@@ -375,6 +373,19 @@
       background: #1e2028;
     }
 
+    /* ── 서브채널 리사이즈 핸들 ── */
+    .resize-handle {
+      width: 4px;
+      background: #1e2028;
+      cursor: col-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+      z-index: 10;
+    }
+    .resize-handle:hover, .resize-handle.dragging {
+      background: #00c73c;
+    }
+
     /* ── 우측: 채팅 ── */
     .col-chat {
       width: 20%;
@@ -384,6 +395,11 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      transition: width 0.15s, min-width 0.15s;
+    }
+
+    .col-chat.chat-hidden {
+      display: none;
     }
 
     #chat-streamer-label {
@@ -434,6 +450,7 @@
     <span id="sync-badge"></span>
     <div class="header-right">
       <span class="status-text">시청 중 <strong id="streamer-count">0</strong>명</span>
+      <button class="btn-header" id="btn-toggle-chat">💬 채팅 숨기기</button>
       <button class="btn-header" id="btn-reload-all">↺ 새로고침</button>
     </div>
   </header>
@@ -448,6 +465,9 @@
       </div>
       <div id="sub-stream-list"></div>
     </aside>
+
+    <!-- 서브채널 너비 조절 핸들 -->
+    <div class="resize-handle" id="resize-handle"></div>
 
     <!-- 중앙: 메인 플레이어 -->
     <section class="col-main">

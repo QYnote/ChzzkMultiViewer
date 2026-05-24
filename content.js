@@ -61,7 +61,7 @@
   let wideModeTriggered = false;
 
   function isWideMode() {
-    return !document.querySelector('[class*="aside_is_expanded"]');
+    return !document.querySelector('#sidebar');
   }
 
   function pressT() {
@@ -89,17 +89,19 @@
       return;
     }
 
-    // 메인 채널: 사이드바 기준으로 이미 넓은 화면이면 스킵
-    if (isWideMode()) return;
-
-    pressT();
-
+    // 메인 채널: 1초마다 사이드바 존재 확인 후 T 키 (최대 15초)
+    // 즉시 판단하지 않음 — 새로고침 직후 사이드바 렌더링 지연 대응
+    let attempts = 0;
     wideModeTimer = setInterval(() => {
       if (isWideMode()) {
         clearInterval(wideModeTimer);
         wideModeTimer = null;
-      } else {
-        pressT();
+        return;
+      }
+      pressT();
+      if (++attempts >= 15) {
+        clearInterval(wideModeTimer);
+        wideModeTimer = null;
       }
     }, 1000);
   }
