@@ -60,29 +60,48 @@
   // ── 넓은 화면 전환 ──
   let wideModeTriggered = false;
 
+  function isWideMode() {
+    return !document.querySelector('[class*="aside_is_expanded"]');
+  }
+
+  function pressT() {
+    const video = document.querySelector('video');
+    const target = (video && video.closest('[tabindex]')) || document.body;
+    try { window.focus(); } catch (e) {}
+    target.focus();
+    ['keydown', 'keyup'].forEach(type => {
+      target.dispatchEvent(new KeyboardEvent(type, {
+        key: 't', code: 'KeyT', keyCode: 84, which: 84,
+        bubbles: true, cancelable: true,
+      }));
+    });
+  }
+
+  let wideModeTimer = null;
+
   function triggerWideMode() {
     if (wideModeTriggered) return;
     wideModeTriggered = true;
 
-    // 같은 탭 내 다른 요소에 포커스가 있을 경우 이 iframe으로 강제 복귀
-    try { window.focus(); } catch (e) {}
+    if (forceMuted) {
+      // 서브 채널: 사이드바 감지 불가 → 즉시 't' 입력
+      pressT();
+      return;
+    }
 
-    const video = document.querySelector('video');
-    const target = (video && video.closest('[tabindex]')) || document.body;
-    target.focus();
+    // 메인 채널: 사이드바 기준으로 이미 넓은 화면이면 스킵
+    if (isWideMode()) return;
 
-    setTimeout(() => {
-      ['keydown', 'keyup'].forEach(type => {
-        target.dispatchEvent(new KeyboardEvent(type, {
-          key: 't',
-          code: 'KeyT',
-          keyCode: 84,
-          which: 84,
-          bubbles: true,
-          cancelable: true,
-        }));
-      });
-    }, 100);
+    pressT();
+
+    wideModeTimer = setInterval(() => {
+      if (isWideMode()) {
+        clearInterval(wideModeTimer);
+        wideModeTimer = null;
+      } else {
+        pressT();
+      }
+    }, 1000);
   }
 
   // ── 채팅 패널 접기 ──
