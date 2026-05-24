@@ -207,6 +207,13 @@
       opacity: 1;
     }
 
+    .sub-tile-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      pointer-events: auto;
+    }
+
     .sub-tile-name {
       font-size: 10px;
       font-weight: 700;
@@ -216,6 +223,29 @@
       overflow: hidden;
       text-overflow: ellipsis;
       pointer-events: none;
+    }
+
+    .btn-sub-remove {
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #e4e6ea;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 5px 5px 0 0;
+      transition: background 0.1s;
+      line-height: 1;
+    }
+
+    .btn-sub-remove:hover {
+      background: rgba(220, 50, 50, 0.6);
+      color: #fff;
     }
 
     /* 하단 컨트롤 바 */

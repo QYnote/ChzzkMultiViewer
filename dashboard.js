@@ -155,7 +155,10 @@ function createSubOverlay(name, iframe, tile) {
   const overlay = document.createElement('div');
   overlay.className = 'sub-tile-overlay';
   overlay.innerHTML = `
-    <span class="sub-tile-name">${name}</span>
+    <div class="sub-tile-top">
+      <span class="sub-tile-name">${name}</span>
+      <button class="btn-sub-remove" title="서브채널 삭제">✕</button>
+    </div>
     <div class="sub-controls">
       <button class="btn-ctrl btn-mute-toggle" title="음소거 토글">🔇</button>
       <input type="range" class="vol-slider" min="0" max="100" value="0" title="볼륨 조절">
@@ -207,6 +210,21 @@ function createSubOverlay(name, iframe, tile) {
     iframe.src = muteUrl;
     lastVol = 50;
     setMutedUI(true);
+  });
+
+  overlay.querySelector('.btn-sub-remove').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const channelId = tile.dataset.channelId;
+    chrome.storage.local.get(['currentViewList'], (result) => {
+      const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
+      chrome.storage.local.set({ currentViewList: list }, () => {
+        tile.remove();
+        streamerCountEl.textContent = list.length;
+        if (list.length <= 1) {
+          subStreamList.innerHTML = '<p class="sub-empty-msg">서브 채널이<br>없습니다.</p>';
+        }
+      });
+    });
   });
 
   updateSliderStyle();
