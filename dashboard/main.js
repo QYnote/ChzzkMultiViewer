@@ -1,0 +1,136 @@
+// ── DOM 요소 (전역 공유 - 다른 파일에서 참조) ──
+var colMain          = document.querySelector('.col-main');
+var colSub           = document.querySelector('.col-sub');
+var colChat          = document.querySelector('.col-chat');
+var subStreamList    = document.getElementById('sub-stream-list');
+var mainEmptyNotice  = document.getElementById('main-empty-notice');
+var mainInfoBar      = document.getElementById('main-info-bar');
+var mainStreamerName = document.getElementById('main-streamer-name');
+var btnMainRefresh   = document.getElementById('btn-main-refresh');
+var btnReloadAll     = document.getElementById('btn-reload-all');
+var btnToggleChat    = document.getElementById('btn-toggle-chat');
+var resizeHandle     = document.getElementById('resize-handle');
+var chatFrame        = document.getElementById('chat-frame');
+var chatEmptyNotice  = document.getElementById('chat-empty-notice');
+var chatStreamerLabel = document.getElementById('chat-streamer-label');
+var streamerCountEl  = document.getElementById('streamer-count');
+var syncBadge        = document.getElementById('sync-badge');
+var mainLatencyEl    = document.getElementById('main-latency');
+var btnSubCollapse   = document.getElementById('btn-sub-collapse');
+var btnSubHCollapse  = document.getElementById('btn-sub-hcollapse');
+
+// ── 공유 상태 변수 ──
+var currentMain      = null;
+var mainIframe       = null;
+var autoSyncSettings = { isAutoSync: false, limitSeconds: 10 };
+var lastLatencyTime  = 0;
+var noSignalTimer    = null;
+
+// ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'chzzk-mv-latency') {
+    const sec = e.data.v;
+    const text = `딜레이 ${sec.toFixed(1)}s`;
+    if (e.source === mainIframe?.contentWindow) {
+      if (mainLatencyEl) mainLatencyEl.textContent = text;
+      lastLatencyTime = Date.now();
+      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds) {
+        mainIframe.src = mainIframe.src;
+        lastLatencyTime = Date.now();
+      }
+    } else {
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (e.source === tile._iframe?.contentWindow) {
+          const label = tile.querySelector('.sub-latency-label');
+          if (label) label.textContent = text;
+        }
+      });
+    }
+    return;
+  }
+  if (e.data?.type !== 'chzzk-mv-vol') return;
+  console.log('[mv-vol] 수신:', e.data.v, '| mainIframe 있음:', !!mainIframe, '| source 일치:', e.source === mainIframe?.contentWindow);
+  if (!mainIframe) return;
+  try {
+    if (e.source === mainIframe.contentWindow) {
+      mainIframe._trackedVol = e.data.v;
+      console.log('[mv-vol] _trackedVol 저장:', mainIframe._trackedVol);
+    }
+  } catch (err) {
+    console.error('[mv-vol] 추적 오류:', err);
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+  initButtonEvents();
+  restoreChatState();
+  restoreLayoutState();
+});
+
+// ── 버튼 이벤트 바인딩 ──
+function initButtonEvents() {
+  btnReloadAll?.addEventListener('click', loadDashboard);
+  btnMainRefresh?.addEventListener('click', () => {
+    if (mainIframe) mainIframe.src = mainIframe.src;
+  });
+
+  btnToggleChat?.addEventListener('click', () => {
+    const hidden = colChat.classList.toggle('chat-hidden');
+    btnToggleChat.textContent = hidden ? '💬 채팅 보기' : '💬 채팅 숨기기';
+    chrome.storage.local.set({ dashboardChatHidden: hidden });
+  });
+
+  btnSubCollapse?.addEventListener('mousedown', (e) => e.stopPropagation());
+  btnSubCollapse?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const layout = document.querySelector('.layout-wrapper').dataset.layout || '1';
+    const collapsed = colSub.classList.toggle('sub-collapsed');
+    btnSubCollapse.textContent = layout === '2'
+      ? (collapsed ? '◀' : '▶')
+      : (collapsed ? '▶' : '◀');
+    chrome.storage.local.set({ subPanelCollapsed: collapsed });
+  });
+
+  btnSubHCollapse?.addEventListener('click', () => {
+    const wrapper = document.querySelector('.layout-wrapper');
+    const layout = wrapper.dataset.layout || '1';
+    const collapsed = colSub.classList.toggle('sub-collapsed');
+    applySubRows(wrapper, layout, collapsed);
+    updateHCollapseBtn(layout, collapsed);
+    chrome.storage.local.set({ subPanelCollapsed: collapsed });
+  });
+
+  let isResizing = false;
+
+  resizeHandle?.addEventListener('mousedown', (e) => {
+    if (colSub.classList.contains('sub-collapsed')) return;
+    isResizing = true;
+    resizeHandle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const wrapper = document.querySelector('.layout-wrapper');
+    const rect = wrapper.getBoundingClientRect();
+    const layout = wrapper.dataset.layout || '1';
+    const newWidth = layout === '2'
+      ? Math.max(120, Math.min(window.innerWidth * 0.3, rect.right - e.clientX))
+      : Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - rect.left));
+    colSub.style.width = newWidth + 'px';
+    colSub.style.minWidth = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizeHandle.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+  });
+}
