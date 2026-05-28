@@ -76,17 +76,23 @@ Chrome 웹스토어 출시 전 직접 설치 방법입니다.
 
 ```
 source/
-├── manifest.json     권한 선언, content_scripts 등록
-├── background.js     Service Worker — 쿠키 주입 규칙, 팔로잉 API fetch 대리
-├── content.js        chzzk 스트림 페이지 주입 스크립트 (볼륨 제어, 와이드 모드)
-├── popup.html        팝업 관리자 UI (4탭)
-├── popup.js          팝업 로직
-├── dashboard.html    멀티뷰 대시보드 UI
-├── dashboard.js      대시보드 로직
-├── icon16.png        툴바 아이콘
-├── icon32.png        HiDPI 툴바 아이콘
-├── icon48.png        확장 관리 페이지 아이콘
-└── icon128.png       웹스토어 아이콘
+├── manifest.json          권한 선언, content_scripts 등록
+├── background.js          Service Worker — 쿠키 주입 규칙, 팔로잉 API fetch 대리
+├── content.js             chzzk 스트림 페이지 주입 스크립트 (볼륨 제어, 와이드 모드)
+├── popup.html             팝업 관리자 UI (4탭)
+├── popup.js               팝업 로직
+├── dashboard.html         멀티뷰 대시보드 UI
+├── dashboard/
+│   ├── main.js            DOM 초기화, 공유 상태, 버튼 이벤트, 딜레이 수신
+│   ├── player.js          iframe 생성, 메인/서브 플레이어, 서브 타일 생성
+│   ├── control.js         메인 ↔ 서브 스왑, 자동 동기화, 레이아웃/패널 접기
+│   └── chat.js            채팅 iframe 세팅 및 숨김 상태 복원
+└── resources/
+    ├── icon16.png         툴바 아이콘
+    ├── icon32.png         HiDPI 툴바 아이콘
+    ├── icon48.png         확장 관리 페이지 아이콘
+    ├── icon128.png        웹스토어 아이콘
+    └── icon.png           원본 아이콘
 ```
 
 ---
