@@ -9,6 +9,9 @@ function saveSettings() {
 
 // ── 설정 탭 이벤트 바인딩 ──
 function initSettingsEvents() {
+  const versionEl = document.getElementById('version-display');
+  if (versionEl) versionEl.textContent = 'v' + chrome.runtime.getManifest().version;
+
   document.querySelectorAll('.layout-opt').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.layout-opt').forEach(o => o.classList.remove('active'));

@@ -111,47 +111,9 @@
       <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 스트리머가 없습니다.</p>
     </div>
     <button id="btn-open-dashboard">🖥️ 멀티뷰 대시보드 열기</button>
-  </div>
-
-  <!-- 탭 2: 즐겨찾기 관리 (보관함) -->
-  <div id="tab2" class="tab-content">
-    <div class="list-container" id="favorite-master-list">
-      <!-- 영구 보관된 즐겨찾기 스트리머들이 렌더링될 곳 -->
-      <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">보관함이 비어 있습니다.</p>
-    </div>
-  </div>
-
-  <!-- 탭 3: 스트리머 추가 (이원화 창구) -->
-  <div id="tab3" class="tab-content">
-    <!-- 수동 등록 파트 -->
-    <div style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 15px;">
-      <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">📌 수동 ID 입력 등록</h3>
-      <div class="input-group">
-        <label>치지직 채널 고유 ID (32자리 난수)</label>
-        <input type="text" id="input-channel-id" placeholder="예: 2b3c4d... 주소창에서 복사">
-      </div>
-      <div class="input-group">
-        <label>스트리머 별명 / 식별용 이름</label>
-        <input type="text" id="input-streamer-name" placeholder="예: 홍길동 라이브">
-      </div>
-      <button id="btn-add-manual">현재 시청 목록에 추가</button>
-    </div>
-
-    <!-- 팔로잉 연동 파트 -->
-    <div>
-      <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">🤝 치지직 팔로잉 연동</h3>
-      <button id="btn-load-following" class="btn-secondary" style="margin-top:0;">내 팔로잉 목록 가져오기</button>
-      <div id="following-sync-container" style="margin-top:10px; display:none;">
-        <div class="list-container" id="following-api-list" style="height:220px;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 탭 4: 기타 설정 -->
-  <div id="tab4" class="tab-content">
 
     <!-- 레이아웃 선택 -->
-    <div style="margin-bottom: 16px;">
+    <div style="margin-top: 12px;">
       <label style="display:block; font-size:11px; font-weight:bold; margin-bottom:8px;">대시보드 레이아웃</label>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
 
@@ -213,6 +175,44 @@
 
       </div>
     </div>
+  </div>
+
+  <!-- 탭 2: 즐겨찾기 관리 (보관함) -->
+  <div id="tab2" class="tab-content">
+    <div class="list-container" id="favorite-master-list">
+      <!-- 영구 보관된 즐겨찾기 스트리머들이 렌더링될 곳 -->
+      <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">보관함이 비어 있습니다.</p>
+    </div>
+  </div>
+
+  <!-- 탭 3: 스트리머 추가 (이원화 창구) -->
+  <div id="tab3" class="tab-content">
+    <!-- 수동 등록 파트 -->
+    <div style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 15px;">
+      <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">📌 수동 ID 입력 등록</h3>
+      <div class="input-group">
+        <label>치지직 채널 고유 ID (32자리 난수)</label>
+        <input type="text" id="input-channel-id" placeholder="예: 2b3c4d... 주소창에서 복사">
+      </div>
+      <div class="input-group">
+        <label>스트리머 별명 / 식별용 이름</label>
+        <input type="text" id="input-streamer-name" placeholder="예: 홍길동 라이브">
+      </div>
+      <button id="btn-add-manual">현재 시청 목록에 추가</button>
+    </div>
+
+    <!-- 팔로잉 연동 파트 -->
+    <div>
+      <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">🤝 치지직 팔로잉 연동</h3>
+      <button id="btn-load-following" class="btn-secondary" style="margin-top:0;">내 팔로잉 목록 가져오기</button>
+      <div id="following-sync-container" style="margin-top:10px; display:none;">
+        <div class="list-container" id="following-api-list" style="height:220px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 탭 4: 기타 설정 -->
+  <div id="tab4" class="tab-content">
 
     <div class="input-group" style="display: flex; align-items: center; margin-top: 15px;">
       <input type="checkbox" id="chk-auto-sync" style="width: auto; margin-right: 10px;">
@@ -232,6 +232,8 @@
         3. 본 프로그램은 웹개발을 모르는 타언어 개발자가 Claude Code Pro를 이용하여 개발하였습니다. 처음으로 AI만을 이용하여 개발을 시도해 본 프로젝트입니다.
       </p>
     </div>
+
+    <p id="version-display" style="font-size:10px; color:#adb5bd; text-align:right; margin:8px 0 0 0;"></p>
 
     <!-- 개발자 소셜 링크 -->
     <div style="display: flex; justify-content: center; gap: 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #dee2e6;">
