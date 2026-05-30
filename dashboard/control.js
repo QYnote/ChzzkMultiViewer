@@ -78,19 +78,25 @@ function updateHCollapseBtn(layout, collapsed) {
   }
 }
 
-function applySubRows(wrapper, layout, collapsed) {
+function applySubRows(wrapper, layout, collapsed, height) {
+  const h = height !== undefined ? height : subPanelHeight;
   if (layout === '3') {
-    wrapper.style.gridTemplateRows = collapsed ? '1fr 14px 0px' : '1fr 14px 148px';
+    wrapper.style.gridTemplateRows = collapsed ? '1fr 14px 0px' : `1fr 14px ${h}px`;
+    if (!collapsed) colSub.style.height = h + 'px';
   } else if (layout === '4') {
-    wrapper.style.gridTemplateRows = collapsed ? '0px 14px 1fr' : '148px 14px 1fr';
+    wrapper.style.gridTemplateRows = collapsed ? '0px 14px 1fr' : `${h}px 14px 1fr`;
+    if (!collapsed) colSub.style.height = h + 'px';
+  } else {
+    colSub.style.height = '';
   }
 }
 
 function restoreSubPanelState() {
-  chrome.storage.local.get(['subPanelCollapsed'], (result) => {
+  chrome.storage.local.get(['subPanelCollapsed', 'subPanelHeight'], (result) => {
     const wrapper = document.querySelector('.layout-wrapper');
     const layout = wrapper.dataset.layout || '1';
     const collapsed = !!result.subPanelCollapsed;
+    subPanelHeight = result.subPanelHeight || 148;
     if (collapsed) colSub.classList.add('sub-collapsed');
     applySubRows(wrapper, layout, collapsed);
     if (btnSubCollapse) {

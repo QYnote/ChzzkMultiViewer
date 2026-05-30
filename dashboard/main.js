@@ -18,6 +18,7 @@ var syncBadge        = document.getElementById('sync-badge');
 var mainLatencyEl    = document.getElementById('main-latency');
 var btnSubCollapse   = document.getElementById('btn-sub-collapse');
 var btnSubHCollapse  = document.getElementById('btn-sub-hcollapse');
+var hresizeHandle    = document.getElementById('hresize-handle');
 
 // ── 공유 상태 변수 ──
 var currentMain      = null;
@@ -25,6 +26,7 @@ var mainIframe       = null;
 var autoSyncSettings = { isAutoSync: false, limitSeconds: 10 };
 var lastLatencyTime  = 0;
 var noSignalTimer    = null;
+var subPanelHeight   = 148;
 
 // ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
 window.addEventListener('message', (e) => {
@@ -102,6 +104,9 @@ function initButtonEvents() {
   });
 
   let isResizing = false;
+  let isHResizing = false;
+  let hResizeStartY = 0;
+  let hResizeStartHeight = 148;
 
   resizeHandle?.addEventListener('mousedown', (e) => {
     if (colSub.classList.contains('sub-collapsed')) return;
@@ -113,24 +118,59 @@ function initButtonEvents() {
     e.preventDefault();
   });
 
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizing) return;
+  hresizeHandle?.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#btn-sub-hcollapse')) return;
+    if (colSub.classList.contains('sub-collapsed')) return;
     const wrapper = document.querySelector('.layout-wrapper');
-    const rect = wrapper.getBoundingClientRect();
-    const layout = wrapper.dataset.layout || '1';
-    const newWidth = layout === '2'
-      ? Math.max(120, Math.min(window.innerWidth * 0.3, rect.right - e.clientX))
-      : Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - rect.left));
-    colSub.style.width = newWidth + 'px';
-    colSub.style.minWidth = newWidth + 'px';
+    const layout = wrapper.dataset.layout;
+    if (layout !== '3' && layout !== '4') return;
+    isHResizing = true;
+    hResizeStartY = e.clientY;
+    hResizeStartHeight = colSub.offsetHeight;
+    wrapper.style.transition = 'none';
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (isResizing) {
+      const wrapper = document.querySelector('.layout-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      const layout = wrapper.dataset.layout || '1';
+      const newWidth = layout === '2'
+        ? Math.max(120, Math.min(window.innerWidth * 0.3, rect.right - e.clientX))
+        : Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - rect.left));
+      colSub.style.width = newWidth + 'px';
+      colSub.style.minWidth = newWidth + 'px';
+    }
+    if (isHResizing) {
+      const wrapper = document.querySelector('.layout-wrapper');
+      const layout = wrapper.dataset.layout;
+      const delta = layout === '3' ? hResizeStartY - e.clientY : e.clientY - hResizeStartY;
+      const newHeight = Math.max(60, Math.min(window.innerHeight * 0.6, hResizeStartHeight + delta));
+      applySubRows(wrapper, layout, false, newHeight);
+    }
   });
 
   document.addEventListener('mouseup', () => {
-    if (!isResizing) return;
-    isResizing = false;
-    resizeHandle.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+    if (isResizing) {
+      isResizing = false;
+      resizeHandle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+    }
+    if (isHResizing) {
+      isHResizing = false;
+      const wrapper = document.querySelector('.layout-wrapper');
+      wrapper.style.transition = '';
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+      subPanelHeight = colSub.offsetHeight;
+      chrome.storage.local.set({ subPanelHeight });
+    }
   });
 }
