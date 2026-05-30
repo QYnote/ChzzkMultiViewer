@@ -5,7 +5,7 @@ function loadAndRenderData() {
     renderStreamerList(currentViewListDiv, currentList, 'current');
 
     const favoriteList = result.favoriteMasterList || [];
-    renderStreamerList(favoriteMasterListDiv, favoriteList, 'favorite');
+    renderStreamerList(favoriteMasterListDiv, favoriteList, 'favorite', currentList);
 
     const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10 };
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;

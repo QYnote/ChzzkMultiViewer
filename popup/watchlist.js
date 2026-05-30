@@ -11,7 +11,7 @@ function setMiniButtonStyle(btn, bgColor) {
 }
 
 // ── 스트리머 목록 렌더링 (시청목록 / 즐겨찾기 공용) ──
-function renderStreamerList(container, list, type) {
+function renderStreamerList(container, list, type, currentList) {
   if (!container) return;
   container.innerHTML = '';
 
@@ -69,11 +69,13 @@ function renderStreamerList(container, list, type) {
       btnDel.addEventListener('click', () => deleteStreamer('current', index));
       actionGroup.appendChild(btnDel);
     } else if (type === 'favorite') {
+      const inCurrent = (currentList || []).some(s => s.channelId === streamer.channelId);
       const btnCopyToCurrent = document.createElement('button');
-      btnCopyToCurrent.textContent = '+ 시청';
-      setMiniButtonStyle(btnCopyToCurrent, '#00c73c');
+      btnCopyToCurrent.textContent = inCurrent ? '추가됨' : '+ 시청';
+      setMiniButtonStyle(btnCopyToCurrent, inCurrent ? '#bbb' : '#00c73c');
+      btnCopyToCurrent.disabled = inCurrent;
       btnCopyToCurrent.style.marginRight = '4px';
-      btnCopyToCurrent.addEventListener('click', () => copyToCurrentView(streamer));
+      if (!inCurrent) btnCopyToCurrent.addEventListener('click', () => copyToCurrentView(streamer));
 
       const btnDelFav = document.createElement('button');
       btnDelFav.textContent = '삭제';
