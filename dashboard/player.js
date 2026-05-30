@@ -45,6 +45,7 @@ function loadDashboard() {
     }
 
     applyAutoSync(settings);
+    restoreLayoutState();
   });
 }
 

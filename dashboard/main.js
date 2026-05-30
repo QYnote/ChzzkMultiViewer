@@ -68,7 +68,11 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.action !== 'checkReload') return;
   const incoming = JSON.stringify((message.currentViewList || []).map(s => s.channelId));
   const current  = JSON.stringify(loadedViewList);
-  if (incoming !== current) loadDashboard();
+  if (incoming !== current) {
+    loadDashboard();
+  } else {
+    restoreLayoutState();
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
