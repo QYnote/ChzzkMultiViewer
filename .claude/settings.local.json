@@ -1,10 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"Compress-Archive -Path manifest.json, background.js, content.js, popup.html, popup.js, dashboard.html, dashboard.js, icon16.png, icon32.png, icon48.png, icon128.png, README.md -DestinationPath '..\\\\release\\\\ChzzkMultiViewer_v1.0.2.zip' -Force\")",
-      "Bash(powershell -Command \"Remove-Item '..\\\\release\\\\ChzzkMultiViewer_v1.0.2.zip' -Force; Compress-Archive -Path manifest.json, background.js, content.js, popup.html, popup.js, dashboard.html, dashboard.js, icon16.png, icon32.png, icon48.png, icon128.png, README.md -DestinationPath '..\\\\release\\\\ChzzkMultiViewer_v1.0.3.zip' -Force\")",
-      "Bash(powershell -Command \"Compress-Archive -Path manifest.json, background.js, content.js, popup.html, popup.js, dashboard.html, dashboard.js, icon16.png, icon32.png, icon48.png, icon128.png, README.md -DestinationPath '..\\\\release\\\\ChzzkMultiViewer_v1.0.3.zip' -Force\")",
-      "Bash(git checkout *)"
+      "Read(e:/03_Study/Project/web/multiviewer/source/**)",
+      "Write(e:/03_Study/Project/web/multiviewer/source/**)",
+      "Edit(e:/03_Study/Project/web/multiviewer/source/**)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(git mv *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
