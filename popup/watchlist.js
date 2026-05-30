@@ -31,7 +31,14 @@ function renderStreamerList(container, list, type, currentList) {
     itemDiv.style.fontSize = '12px';
 
     const textSpan = document.createElement('span');
-    textSpan.innerHTML = `<strong>${streamer.name}</strong> <span style="color:#999; font-size:10px;">(${streamer.channelId.substring(0,6)}...)</span>`;
+    const nameStrong = document.createElement('strong');
+    nameStrong.textContent = streamer.name;
+    const idSpan = document.createElement('span');
+    idSpan.style.cssText = 'color:#999; font-size:10px;';
+    idSpan.textContent = `(${streamer.channelId.substring(0, 6)}...)`;
+    textSpan.appendChild(nameStrong);
+    textSpan.appendChild(document.createTextNode(' '));
+    textSpan.appendChild(idSpan);
     itemDiv.appendChild(textSpan);
 
     const actionGroup = document.createElement('div');
@@ -94,6 +101,16 @@ function renderStreamerList(container, list, type, currentList) {
 // ── 수동 스트리머 추가 이벤트 ──
 function initWatchlistEvents() {
   if (!btnAddManual) return;
+
+  if (inputStreamerName) {
+    inputStreamerName.addEventListener('input', () => {
+      const filtered = inputStreamerName.value.replace(/[<>"'&]/g, '');
+      if (filtered !== inputStreamerName.value) {
+        inputStreamerName.value = filtered;
+        showToast('특수문자(< > " \' &)는 사용할 수 없습니다.', 'error');
+      }
+    });
+  }
   btnAddManual.addEventListener('click', () => {
     const channelId = inputChannelId.value.trim();
     const name = inputStreamerName.value.trim();
