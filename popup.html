@@ -74,6 +74,30 @@
     .btn-secondary { background-color: #6c757d; margin-top: 10px; }
     .btn-secondary:hover { background-color: #5a6268; }
 
+    /* 토스트 알림 */
+    #toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #fff;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 9999;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    #toast.success { background: #00c73c; }
+    #toast.error   { background: #dc3545; }
+
     /* 레이아웃 선택 옵션 */
     .layout-opt {
       display: flex;
@@ -251,6 +275,8 @@
       </a>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <!-- 로직 연결용 스크립트 파일 매핑 -->
   <script src="popup/main.js"></script>

@@ -81,23 +81,23 @@ function initWatchlistEvents() {
     const name = inputStreamerName.value.trim();
 
     if (!channelId || !name) {
-      alert('채널 고유 ID와 스트리머 별명을 모두 입력해 주세요.');
+      showToast('채널 고유 ID와 스트리머 별명을 모두 입력해 주세요.', 'error');
       return;
     }
     if (channelId.length !== 32) {
-      alert('치지직 채널 ID는 32자리 문자열이어야 합니다.');
+      showToast('치지직 채널 ID는 32자리 문자열이어야 합니다.', 'error');
       return;
     }
 
     chrome.storage.local.get(['currentViewList'], (result) => {
       const currentList = result.currentViewList || [];
       if (currentList.some(s => s.channelId === channelId)) {
-        alert('이미 현재 시청 목록에 등록되어 있는 스트리머입니다.');
+        showToast('이미 현재 시청 목록에 등록되어 있는 스트리머입니다.', 'error');
         return;
       }
       currentList.push({ channelId, name });
       chrome.storage.local.set({ currentViewList: currentList }, () => {
-        alert(`${name} 스트리머가 시청 목록에 추가되었습니다.`);
+        showToast(`${name} 스트리머가 시청 목록에 추가되었습니다.`, 'success');
         if (inputChannelId) inputChannelId.value = '';
         if (inputStreamerName) inputStreamerName.value = '';
         loadAndRenderData();

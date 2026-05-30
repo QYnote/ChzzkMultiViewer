@@ -13,6 +13,17 @@ var followingApiListDiv    = document.getElementById('following-api-list');
 var chkAutoSync            = document.getElementById('chk-auto-sync');
 var numLimitSeconds        = document.getElementById('num-limit-seconds');
 
+// ── 토스트 알림 ──
+var toastTimer = null;
+function showToast(message, type) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.className = 'show ' + (type === 'error' ? 'error' : 'success');
+  toastTimer = setTimeout(() => { toast.className = ''; }, 2500);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initTabEvent();
   loadAndRenderData();

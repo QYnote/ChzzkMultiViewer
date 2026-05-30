@@ -46,13 +46,13 @@ function copyToCurrentView(streamer) {
   chrome.storage.local.get(['currentViewList'], (result) => {
     const currentList = result.currentViewList || [];
     if (currentList.some(s => s.channelId === streamer.channelId)) {
-      alert('이미 현재 시청 목록에 올라와 있습니다.');
+      showToast('이미 현재 시청 목록에 올라와 있습니다.', 'error');
       return;
     }
     currentList.push({ channelId: streamer.channelId, name: streamer.name });
     chrome.storage.local.set({ currentViewList: currentList }, () => {
       loadAndRenderData();
-      alert('시청 목록으로 안전하게 복사되었습니다.');
+      showToast('시청 목록으로 안전하게 복사되었습니다.', 'success');
     });
   });
 }
