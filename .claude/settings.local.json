@@ -12,7 +12,8 @@
       "Bash(git remote *)",
       "Bash(git mv *)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(git fetch *)"
     ]
   }
 }
