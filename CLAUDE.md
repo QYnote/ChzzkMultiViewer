@@ -61,6 +61,7 @@
 2. develop → master 병합한다.
 3. master 기준으로 배포 파일(ZIP)을 생성한다.
 4. manifest.json의 version을 규칙에 맞게 올린다.
+5. README.md의 `## 버전 수정 내역`에 새 버전 항목을 추가하고 변경사항을 기록한다.
 
 ### hotfix 절차
 
