@@ -39,7 +39,23 @@ function renderStreamerList(container, list, type) {
     actionGroup.style.gap = '4px';
 
     if (type === 'current') {
-      if (index !== 0) {
+      if (index > 0) {
+        if (index > 1) {
+          const btnUp = document.createElement('button');
+          btnUp.textContent = '▲';
+          setMiniButtonStyle(btnUp, '#868e96');
+          btnUp.addEventListener('click', () => moveStreamer(index, -1));
+          actionGroup.appendChild(btnUp);
+        }
+
+        if (index !== list.length - 1) {
+          const btnDown = document.createElement('button');
+          btnDown.textContent = '▼';
+          setMiniButtonStyle(btnDown, '#868e96');
+          btnDown.addEventListener('click', () => moveStreamer(index, 1));
+          actionGroup.appendChild(btnDown);
+        }
+
         const btnSetMain = document.createElement('button');
         btnSetMain.textContent = '▶ 메인';
         setMiniButtonStyle(btnSetMain, '#4D90FE');

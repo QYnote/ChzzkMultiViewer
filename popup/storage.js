@@ -41,6 +41,17 @@ function setAsMain(index) {
   });
 }
 
+// ── 시청 목록 순서 변경 ──
+function moveStreamer(index, direction) {
+  chrome.storage.local.get(['currentViewList'], (result) => {
+    const list = result.currentViewList || [];
+    const target = index + direction;
+    if (target < 0 || target >= list.length) return;
+    [list[index], list[target]] = [list[target], list[index]];
+    chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
+  });
+}
+
 // ── 즐겨찾기 → 시청목록 복사 ──
 function copyToCurrentView(streamer) {
   chrome.storage.local.get(['currentViewList'], (result) => {
