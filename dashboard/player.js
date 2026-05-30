@@ -24,7 +24,7 @@ function loadDashboard() {
 
   chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
     const list     = result.currentViewList || [];
-    const settings = result.systemSettings  || { isAutoSync: false, limitSeconds: 10 };
+    const settings = result.systemSettings  || { isAutoSync: true, limitSeconds: 10 };
     loadedViewList = list.map(s => s.channelId);
 
     streamerCountEl.textContent = list.length;

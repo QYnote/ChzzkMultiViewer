@@ -21,13 +21,22 @@ var btnSubHCollapse  = document.getElementById('btn-sub-hcollapse');
 var hresizeHandle    = document.getElementById('hresize-handle');
 
 // ── 공유 상태 변수 ──
-var currentMain      = null;
-var mainIframe       = null;
-var autoSyncSettings = { isAutoSync: false, limitSeconds: 10 };
-var lastLatencyTime  = 0;
-var noSignalTimer    = null;
-var subPanelHeight   = 148;
-var loadedViewList   = [];
+var currentMain        = null;
+var mainIframe         = null;
+var autoSyncSettings   = { isAutoSync: true, limitSeconds: 10 };
+var lastLatencyTime    = 0;
+var noSignalTimer      = null;
+var subPanelHeight     = 148;
+var loadedViewList     = [];
+var mainLastSyncTime   = 0;
+const SYNC_COOLDOWN    = 15000;
+
+// ── 설정 변경 감지 (팝업에서 변경 시 즉시 반영) ──
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.systemSettings) {
+    applyAutoSync(changes.systemSettings.newValue || { isAutoSync: true, limitSeconds: 10 });
+  }
+});
 
 // ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
 window.addEventListener('message', (e) => {
@@ -37,15 +46,25 @@ window.addEventListener('message', (e) => {
     if (e.source === mainIframe?.contentWindow) {
       if (mainLatencyEl) mainLatencyEl.textContent = text;
       lastLatencyTime = Date.now();
-      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds) {
+      const now = Date.now();
+      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+          && now - mainLastSyncTime > SYNC_COOLDOWN) {
         mainIframe.src = mainIframe.src;
-        lastLatencyTime = Date.now();
+        lastLatencyTime = now;
+        mainLastSyncTime = now;
       }
     } else {
       document.querySelectorAll('.sub-tile').forEach(tile => {
         if (e.source === tile._iframe?.contentWindow) {
           const label = tile.querySelector('.sub-latency-label');
           if (label) label.textContent = text;
+          const now = Date.now();
+          if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+              && tile._iframe.src
+              && (!tile._lastSyncTime || now - tile._lastSyncTime > SYNC_COOLDOWN)) {
+            tile._iframe.src = tile._iframe.src;
+            tile._lastSyncTime = now;
+          }
         }
       });
     }
