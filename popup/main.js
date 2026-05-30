@@ -41,7 +41,23 @@ function initButtonEvents() {
 
   if (btnOpenDashboard) {
     btnOpenDashboard.addEventListener('click', () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
+      const dashboardUrl = chrome.runtime.getURL('dashboard.html');
+      chrome.tabs.query({ url: dashboardUrl }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.update(tabs[0].id, { active: true });
+          chrome.windows.update(tabs[0].windowId, { focused: true });
+          chrome.storage.local.get(['currentViewList'], (result) => {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              action: 'checkReload',
+              currentViewList: result.currentViewList || []
+            });
+            window.close();
+          });
+        } else {
+          chrome.tabs.create({ url: dashboardUrl });
+          window.close();
+        }
+      });
     });
   }
 }

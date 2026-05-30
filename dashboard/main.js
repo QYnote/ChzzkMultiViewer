@@ -27,6 +27,7 @@ var autoSyncSettings = { isAutoSync: false, limitSeconds: 10 };
 var lastLatencyTime  = 0;
 var noSignalTimer    = null;
 var subPanelHeight   = 148;
+var loadedViewList   = [];
 
 // ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
 window.addEventListener('message', (e) => {
@@ -61,6 +62,13 @@ window.addEventListener('message', (e) => {
   } catch (err) {
     console.error('[mv-vol] 추적 오류:', err);
   }
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action !== 'checkReload') return;
+  const incoming = JSON.stringify((message.currentViewList || []).map(s => s.channelId));
+  const current  = JSON.stringify(loadedViewList);
+  if (incoming !== current) loadDashboard();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
