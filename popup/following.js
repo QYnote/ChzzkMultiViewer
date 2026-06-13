@@ -1,5 +1,28 @@
+// ── 로그인 상태 확인 및 UI 표시 ──
+function checkLoginStatus() {
+  Promise.all([
+    chrome.cookies.getAll({ url: 'https://naver.com/' }),
+    chrome.cookies.getAll({ url: 'https://chzzk.naver.com/' })
+  ]).then(([naverCookies, chzzkCookies]) => {
+    const allCookies = naverCookies.concat(chzzkCookies);
+    const isLoggedIn = allCookies.some(c => c.name === 'NID_AUT') && allCookies.some(c => c.name === 'NID_SES');
+    if (btnLoadFollowing) btnLoadFollowing.style.display = isLoggedIn ? '' : 'none';
+    if (loginRequiredGuide) loginRequiredGuide.style.display = isLoggedIn ? 'none' : 'block';
+  });
+}
+
 // ── 팔로잉 목록 불러오기 이벤트 ──
 function initFollowingEvents() {
+  checkLoginStatus();
+
+  if (linkGoLogin) {
+    linkGoLogin.addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: 'https://chzzk.naver.com' });
+      window.close();
+    });
+  }
+
   if (!btnLoadFollowing) return;
   btnLoadFollowing.addEventListener('click', () => {
     followingSyncContainer.style.display = 'block';
