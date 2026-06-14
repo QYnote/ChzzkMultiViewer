@@ -7,7 +7,6 @@ var mainEmptyNotice  = document.getElementById('main-empty-notice');
 var mainInfoBar      = document.getElementById('main-info-bar');
 var mainStreamerName = document.getElementById('main-streamer-name');
 var btnMainRefresh   = document.getElementById('btn-main-refresh');
-var btnReloadAll     = document.getElementById('btn-reload-all');
 var btnToggleChat    = document.getElementById('btn-toggle-chat');
 var resizeHandle     = document.getElementById('resize-handle');
 var chatFrame        = document.getElementById('chat-frame');
@@ -123,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── 버튼 이벤트 바인딩 ──
 function initButtonEvents() {
-  btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
     if (!mainIframe) return;
     colMain.querySelector('.init-notice')?.remove();
