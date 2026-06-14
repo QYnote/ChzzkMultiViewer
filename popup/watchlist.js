@@ -136,8 +136,6 @@ function initWatchlistEvents() {
         if (inputChannelId) inputChannelId.value = '';
         if (inputStreamerName) inputStreamerName.value = '';
         loadAndRenderData();
-        const tab1Btn = document.querySelector('[data-tab="tab1"]');
-        if (tab1Btn) tab1Btn.click();
       });
     });
   });
