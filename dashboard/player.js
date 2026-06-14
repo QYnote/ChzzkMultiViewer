@@ -1,7 +1,14 @@
 // ── iframe 생성 ──
+function buildIframeSrc(iframe) {
+  const muted = iframe.dataset.muted === '1';
+  return `https://chzzk.naver.com/live/${iframe.dataset.channelId}?${muted ? 'mute=1&' : ''}mv_ext=1`;
+}
+
 function createIframe(channelId, muted) {
   const iframe = document.createElement('iframe');
-  iframe.src = `https://chzzk.naver.com/live/${channelId}?${muted ? 'mute=1&' : ''}mv_ext=1`;
+  iframe.dataset.channelId = channelId;
+  iframe.dataset.muted = muted ? '1' : '0';
+  iframe.src = buildIframeSrc(iframe);
   iframe.setAttribute('allowfullscreen', '');
   iframe.setAttribute('allow', 'autoplay; encrypted-media');
   return iframe;
@@ -15,11 +22,60 @@ function styleAsSub(iframe) {
   iframe.style.cssText = 'width:100%; height:100%; border:none; pointer-events:none; flex:none;';
 }
 
+// ── 생방송 여부 조회 ──
+function checkLiveStatus(channelId, callback) {
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId }, (response) => {
+    if (chrome.runtime.lastError || !response?.success) { callback(null); return; }
+    callback(response.openLive);
+  });
+}
+
+// ── 비방송 안내 오버레이 ──
+function createOfflineNotice() {
+  const notice = document.createElement('div');
+  notice.className = 'offline-notice';
+  notice.textContent = '방송중이 아닙니다';
+  return notice;
+}
+
+function updateOfflineNotice(container, channelId, iframe) {
+  checkLiveStatus(channelId, (openLive) => {
+    const isOffline = openLive === false;
+    container._isOffline = isOffline;
+
+    let notice = container.querySelector('.offline-notice');
+    if (isOffline) {
+      if (!notice) {
+        notice = createOfflineNotice();
+        container.appendChild(notice);
+      }
+      notice.style.display = 'flex';
+      if (iframe && iframe.getAttribute('src')) iframe.removeAttribute('src');
+    } else {
+      if (notice) notice.style.display = 'none';
+      if (iframe && !iframe.getAttribute('src')) iframe.src = buildIframeSrc(iframe);
+    }
+  });
+}
+
+// ── 시청 목록 전체 비방송 여부 재확인 (1분 주기) ──
+function refreshLiveStatusAll() {
+  if (currentMain) updateOfflineNotice(colMain, currentMain.channelId, mainIframe);
+  document.querySelectorAll('.sub-tile').forEach(tile => {
+    updateOfflineNotice(tile, tile.dataset.channelId, tile._iframe);
+  });
+}
+
 // ── 대시보드 전체 로드 ──
 function loadDashboard() {
   if (mainIframe && mainIframe.parentNode) {
     mainIframe.parentNode.removeChild(mainIframe);
     mainIframe = null;
+  }
+
+  if (liveStatusTimer) {
+    clearInterval(liveStatusTimer);
+    liveStatusTimer = null;
   }
 
   chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
@@ -46,6 +102,8 @@ function loadDashboard() {
 
     applyAutoSync(settings);
     restoreLayoutState();
+
+    liveStatusTimer = setInterval(refreshLiveStatusAll, 60000);
   });
 }
 
@@ -65,6 +123,7 @@ function setMainPlayer(streamer) {
   mainInfoBar.style.display = 'flex';
   mainStreamerName.textContent = streamer.name;
   setChatFrame(streamer);
+  updateOfflineNotice(colMain, streamer.channelId, mainIframe);
 }
 
 // ── 빈 화면 상태 ──
@@ -174,6 +233,7 @@ function createSubTile(streamer) {
   tile._iframe = iframe;
   tile.appendChild(iframe);
   tile.appendChild(createSubOverlay(streamer.name, iframe, tile));
+  updateOfflineNotice(tile, streamer.channelId, iframe);
 
   tile.addEventListener('click', (e) => {
     if (!e.target.closest('.sub-controls')) {

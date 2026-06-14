@@ -30,6 +30,7 @@ var subPanelHeight     = 148;
 var loadedViewList     = [];
 var mainLastSyncTime   = 0;
 const SYNC_COOLDOWN    = 15000;
+var liveStatusTimer    = null;
 
 // ── 설정 변경 감지 (팝업에서 변경 시 즉시 반영) ──
 chrome.storage.onChanged.addListener((changes) => {
@@ -47,7 +48,7 @@ window.addEventListener('message', (e) => {
       if (mainLatencyEl) mainLatencyEl.textContent = text;
       lastLatencyTime = Date.now();
       const now = Date.now();
-      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+      if (!colMain._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
           && now - mainLastSyncTime > SYNC_COOLDOWN) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = now;
@@ -59,7 +60,7 @@ window.addEventListener('message', (e) => {
           const label = tile.querySelector('.sub-latency-label');
           if (label) label.textContent = text;
           const now = Date.now();
-          if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+          if (!tile._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
               && tile._iframe.src
               && (!tile._lastSyncTime || now - tile._lastSyncTime > SYNC_COOLDOWN)) {
             tile._iframe.src = tile._iframe.src;
@@ -105,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initButtonEvents() {
   btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
-    if (mainIframe) mainIframe.src = mainIframe.src;
+    if (mainIframe) mainIframe.src = buildIframeSrc(mainIframe);
   });
 
   btnToggleChat?.addEventListener('click', () => {

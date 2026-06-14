@@ -207,6 +207,27 @@
       opacity: 1;
     }
 
+    /* ── 비방송 안내 오버레이 ── */
+    .offline-notice {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #0d0e12;
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .col-main .offline-notice {
+      bottom: 30px;
+      font-size: 16px;
+    }
+
     .sub-tile-top {
       display: flex;
       align-items: flex-start;

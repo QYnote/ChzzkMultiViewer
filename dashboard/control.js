@@ -25,6 +25,8 @@ function swapWithMain(clickedTile, subStreamer) {
   mainEmptyNotice.style.display = 'none';
   mainInfoBar.style.display = 'flex';
   setChatFrame(subStreamer);
+  updateOfflineNotice(colMain, subStreamer.channelId, subIframe);
+  updateOfflineNotice(clickedTile, prevMain.channelId, oldMainIframe);
 
   const restoreVol = oldMainIframe._trackedVol ?? 1;
   console.log('[mv-swap] 스왑 볼륨 적용 | _trackedVol:', oldMainIframe._trackedVol, '| restoreVol:', restoreVol);
@@ -49,7 +51,7 @@ function applyAutoSync(settings) {
     syncBadge.textContent = `↺ 자동동기화 (${settings.limitSeconds}s 초과 시)`;
     lastLatencyTime = Date.now();
     noSignalTimer = setInterval(() => {
-      if (mainIframe && Date.now() - lastLatencyTime > 10000) {
+      if (mainIframe && !colMain._isOffline && Date.now() - lastLatencyTime > 10000) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = Date.now();
       }
