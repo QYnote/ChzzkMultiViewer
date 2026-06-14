@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/jmhc6/.claude/**)"
+      "Read(//c/Users/jmhc6/.claude/**)",
+      "Bash(ls -la .. 2>/dev/null)",
+      "Read(//e/03_Study/Project/web/multiviewer/**)",
+      "Bash(git archive *)",
+      "Bash(git stash *)",
+      "Bash(git restore *)"
     ]
   }
 }
