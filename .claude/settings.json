@@ -6,7 +6,10 @@
       "Read(//e/03_Study/Project/web/multiviewer/**)",
       "Bash(git archive *)",
       "Bash(git stash *)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(git cherry-pick *)"
     ]
   }
 }
