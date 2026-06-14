@@ -63,11 +63,21 @@ function applyAutoSync(settings) {
     syncBadge.classList.add('active');
     syncBadge.textContent = `↺ 자동동기화 (${settings.limitSeconds}s 초과 시)`;
     lastLatencyTime = Date.now();
+    document.querySelectorAll('.sub-tile').forEach(tile => {
+      tile._lastLatencyTime = Date.now();
+    });
     noSignalTimer = setInterval(() => {
       if (mainIframe && !colMain._isOffline && Date.now() - lastLatencyTime > 10000) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = Date.now();
       }
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (tile._iframe && tile._iframe.src && !tile._isOffline
+            && tile._lastLatencyTime && Date.now() - tile._lastLatencyTime > 10000) {
+          tile._iframe.src = tile._iframe.src;
+          tile._lastLatencyTime = Date.now();
+        }
+      });
     }, 5000);
   } else {
     syncBadge.classList.remove('active');

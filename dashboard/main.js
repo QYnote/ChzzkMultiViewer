@@ -77,6 +77,7 @@ window.addEventListener('message', (e) => {
         if (e.source === tile._iframe?.contentWindow) {
           const label = tile.querySelector('.sub-latency-label');
           if (label) label.textContent = text;
+          tile._lastLatencyTime = Date.now();
           const now = Date.now();
           if (!tile._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
               && tile._iframe.src
