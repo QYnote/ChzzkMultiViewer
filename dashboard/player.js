@@ -276,6 +276,7 @@ function createSubTile(streamer) {
 
   tile.addEventListener('click', (e) => {
     if (!e.target.closest('.sub-controls')) {
+      if (colMain.querySelector('.init-notice') || tile.querySelector('.init-notice')) return;
       swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name });
     }
   });
