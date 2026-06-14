@@ -134,4 +134,28 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
     return true; // 비동기 연결 보존
   }
+
+  if (request.action === "fetchChannelLiveStatus") {
+    const chzzkApiUrl = `https://api.chzzk.naver.com/service/v1/channels/${request.channelId}`;
+
+    fetch(chzzkApiUrl, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(async response => {
+      if (!response.ok) {
+        sendResponse({ success: false, openLive: null });
+        return;
+      }
+      const data = await response.json();
+      sendResponse({ success: true, openLive: data?.content?.openLive ?? null });
+    })
+    .catch(error => {
+      console.error('Background Live Status Fetch Error:', error);
+      sendResponse({ success: false, openLive: null });
+    });
+
+    return true; // 비동기 연결 보존
+  }
 });

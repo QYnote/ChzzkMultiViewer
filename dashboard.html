@@ -207,6 +207,93 @@
       opacity: 1;
     }
 
+    /* ── 비방송 안내 오버레이 ── */
+    .offline-notice {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #0d0e12;
+      color: #6b7280;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .col-main .offline-notice {
+      bottom: 30px;
+      font-size: 16px;
+    }
+
+    /* ── 초기화 진행중 안내 오버레이 ── */
+    .init-notice {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(13, 14, 18, 0.85);
+      color: #e5e7eb;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .col-main .init-notice {
+      bottom: 30px;
+      font-size: 16px;
+    }
+
+    /* ── 수동 와이드 전환 필요 안내 오버레이 ── */
+    .manual-wide-notice {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(13, 14, 18, 0.85);
+      color: #e5e7eb;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      padding: 0 12px;
+      z-index: 3;
+    }
+
+    .col-main .manual-wide-notice {
+      bottom: 30px;
+      font-size: 16px;
+    }
+
+    .manual-wide-notice .manual-wide-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: #9ca3af;
+    }
+
+    .manual-wide-notice .btn-manual-refresh {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #e4e6ea;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .manual-wide-notice .btn-manual-refresh:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
     .sub-tile-top {
       display: flex;
       align-items: flex-start;
@@ -661,9 +748,8 @@
     <div class="header-divider"></div>
     <span id="sync-badge"></span>
     <div class="header-right">
-      <span class="status-text">시청 중 <strong id="streamer-count">0</strong>명</span>
+      <span class="status-text">시청 중 <strong id="streamer-count">0</strong>채널</span>
       <button class="btn-header" id="btn-toggle-chat">💬 채팅 숨기기</button>
-      <button class="btn-header" id="btn-reload-all">↺ 전체 새로고침</button>
     </div>
   </header>
 

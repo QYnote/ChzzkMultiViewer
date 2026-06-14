@@ -7,6 +7,12 @@ function swapWithMain(clickedTile, subStreamer) {
   const subIframe     = clickedTile._iframe;
   const oldMainIframe = mainIframe;
 
+  // 스왑으로 와이드 모드가 풀릴 수 있으므로 기존 안내 오버레이 정리
+  colMain.querySelector('.init-notice')?.remove();
+  colMain.querySelector('.manual-wide-notice')?.remove();
+  clickedTile.querySelector('.init-notice')?.remove();
+  clickedTile.querySelector('.manual-wide-notice')?.remove();
+
   styleAsSub(oldMainIframe);
   clickedTile.insertBefore(oldMainIframe, clickedTile.firstChild);
 
@@ -25,6 +31,15 @@ function swapWithMain(clickedTile, subStreamer) {
   mainEmptyNotice.style.display = 'none';
   mainInfoBar.style.display = 'flex';
   setChatFrame(subStreamer);
+
+  // 와이드 모드 재시도: 새 메인/새 서브 양쪽에 초기화 안내 표시 + iframe에 재시도 요청
+  colMain.appendChild(createInitNotice());
+  clickedTile.appendChild(createInitNotice());
+  subIframe.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+  oldMainIframe.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+
+  updateOfflineNotice(colMain, subStreamer.channelId, subIframe);
+  updateOfflineNotice(clickedTile, prevMain.channelId, oldMainIframe);
 
   const restoreVol = oldMainIframe._trackedVol ?? 1;
   console.log('[mv-swap] 스왑 볼륨 적용 | _trackedVol:', oldMainIframe._trackedVol, '| restoreVol:', restoreVol);
@@ -48,11 +63,21 @@ function applyAutoSync(settings) {
     syncBadge.classList.add('active');
     syncBadge.textContent = `↺ 자동동기화 (${settings.limitSeconds}s 초과 시)`;
     lastLatencyTime = Date.now();
+    document.querySelectorAll('.sub-tile').forEach(tile => {
+      tile._lastLatencyTime = Date.now();
+    });
     noSignalTimer = setInterval(() => {
-      if (mainIframe && Date.now() - lastLatencyTime > 10000) {
+      if (mainIframe && !colMain._isOffline && Date.now() - lastLatencyTime > 10000) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = Date.now();
       }
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (tile._iframe && tile._iframe.src && !tile._isOffline
+            && tile._lastLatencyTime && Date.now() - tile._lastLatencyTime > 10000) {
+          tile._iframe.src = tile._iframe.src;
+          tile._lastLatencyTime = Date.now();
+        }
+      });
     }, 5000);
   } else {
     syncBadge.classList.remove('active');

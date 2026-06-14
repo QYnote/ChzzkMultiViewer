@@ -31,6 +31,7 @@ function renderStreamerList(container, list, type, currentList) {
     itemDiv.style.fontSize = '12px';
 
     const textSpan = document.createElement('span');
+    textSpan.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden;';
     const nameStrong = document.createElement('strong');
     nameStrong.textContent = streamer.name;
     const idSpan = document.createElement('span');
@@ -39,6 +40,26 @@ function renderStreamerList(container, list, type, currentList) {
     textSpan.appendChild(nameStrong);
     textSpan.appendChild(document.createTextNode(' '));
     textSpan.appendChild(idSpan);
+
+    if (type === 'favorite') {
+      const liveBadge = document.createElement('span');
+      liveBadge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
+      liveBadge.textContent = 'OFF';
+      textSpan.appendChild(liveBadge);
+
+      chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: streamer.channelId }, (response) => {
+        if (!response?.success || response.openLive == null) return;
+        liveBadge.style.visibility = 'visible';
+        if (response.openLive) {
+          liveBadge.textContent = 'LIVE';
+          liveBadge.style.cssText += 'background:#e50914; color:#fff;';
+        } else {
+          liveBadge.textContent = 'OFF';
+          liveBadge.style.cssText += 'background:#e1e4e6; color:#767c82;';
+        }
+      });
+    }
+
     itemDiv.appendChild(textSpan);
 
     const actionGroup = document.createElement('div');
@@ -136,8 +157,6 @@ function initWatchlistEvents() {
         if (inputChannelId) inputChannelId.value = '';
         if (inputStreamerName) inputStreamerName.value = '';
         loadAndRenderData();
-        const tab1Btn = document.querySelector('[data-tab="tab1"]');
-        if (tab1Btn) tab1Btn.click();
       });
     });
   });

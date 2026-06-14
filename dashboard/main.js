@@ -7,7 +7,6 @@ var mainEmptyNotice  = document.getElementById('main-empty-notice');
 var mainInfoBar      = document.getElementById('main-info-bar');
 var mainStreamerName = document.getElementById('main-streamer-name');
 var btnMainRefresh   = document.getElementById('btn-main-refresh');
-var btnReloadAll     = document.getElementById('btn-reload-all');
 var btnToggleChat    = document.getElementById('btn-toggle-chat');
 var resizeHandle     = document.getElementById('resize-handle');
 var chatFrame        = document.getElementById('chat-frame');
@@ -30,6 +29,7 @@ var subPanelHeight     = 148;
 var loadedViewList     = [];
 var mainLastSyncTime   = 0;
 const SYNC_COOLDOWN    = 15000;
+var liveStatusTimer    = null;
 
 // ── 설정 변경 감지 (팝업에서 변경 시 즉시 반영) ──
 chrome.storage.onChanged.addListener((changes) => {
@@ -40,6 +40,24 @@ chrome.storage.onChanged.addListener((changes) => {
 
 // ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
 window.addEventListener('message', (e) => {
+  if (e.data?.type === 'chzzk-mv-wide-done') {
+    if (e.source === mainIframe?.contentWindow) {
+      colMain.querySelector('.init-notice')?.remove();
+      if (e.data.success === false) {
+        colMain.appendChild(createManualWideNotice(() => btnMainRefresh?.click()));
+      }
+    } else {
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (e.source === tile._iframe?.contentWindow) {
+          tile.querySelector('.init-notice')?.remove();
+          if (e.data.success === false) {
+            tile.appendChild(createManualWideNotice(() => tile.querySelector('.btn-sub-refresh')?.click()));
+          }
+        }
+      });
+    }
+    return;
+  }
   if (e.data?.type === 'chzzk-mv-latency') {
     const sec = e.data.v;
     const text = `딜레이 ${sec.toFixed(1)}s`;
@@ -47,7 +65,7 @@ window.addEventListener('message', (e) => {
       if (mainLatencyEl) mainLatencyEl.textContent = text;
       lastLatencyTime = Date.now();
       const now = Date.now();
-      if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+      if (!colMain._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
           && now - mainLastSyncTime > SYNC_COOLDOWN) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = now;
@@ -58,8 +76,9 @@ window.addEventListener('message', (e) => {
         if (e.source === tile._iframe?.contentWindow) {
           const label = tile.querySelector('.sub-latency-label');
           if (label) label.textContent = text;
+          tile._lastLatencyTime = Date.now();
           const now = Date.now();
-          if (autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+          if (!tile._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
               && tile._iframe.src
               && (!tile._lastSyncTime || now - tile._lastSyncTime > SYNC_COOLDOWN)) {
             tile._iframe.src = tile._iframe.src;
@@ -103,9 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── 버튼 이벤트 바인딩 ──
 function initButtonEvents() {
-  btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
-    if (mainIframe) mainIframe.src = mainIframe.src;
+    if (!mainIframe) return;
+    colMain.querySelector('.init-notice')?.remove();
+    colMain.querySelector('.manual-wide-notice')?.remove();
+    colMain.appendChild(createInitNotice());
+    mainIframe.src = buildIframeSrc(mainIframe);
   });
 
   btnToggleChat?.addEventListener('click', () => {

@@ -80,7 +80,8 @@
   let wideModeTriggered = false;
 
   function isWideMode() {
-    return !document.querySelector('#sidebar');
+    const layout = document.querySelector('#live_player_layout');
+    return !!layout && layout.classList.contains('is_large');
   }
 
   function pressT() {
@@ -102,28 +103,35 @@
     if (wideModeTriggered) return;
     wideModeTriggered = true;
 
-    if (forceMuted) {
-      // 서브 채널: 사이드바 감지 불가 → 즉시 't' 입력
-      pressT();
-      return;
-    }
-
-    // 메인 채널: 1초마다 사이드바 존재 확인 후 T 키 (최대 15초)
-    // 즉시 판단하지 않음 — 새로고침 직후 사이드바 렌더링 지연 대응
+    // 1초마다 와이드 모드 여부 확인 후 T 키 (최대 1분)
+    // 즉시 판단하지 않음 — 새로고침 직후 렌더링 지연 대응
     let attempts = 0;
     wideModeTimer = setInterval(() => {
       if (isWideMode()) {
         clearInterval(wideModeTimer);
         wideModeTimer = null;
+        window.parent.postMessage({ type: 'chzzk-mv-wide-done', success: true }, '*');
         return;
       }
       pressT();
-      if (++attempts >= 15) {
+      if (++attempts >= 60) {
         clearInterval(wideModeTimer);
         wideModeTimer = null;
+        window.parent.postMessage({ type: 'chzzk-mv-wide-done', success: false }, '*');
       }
     }, 1000);
   }
+
+  // ── postMessage: 와이드 모드 재시도 (메인↔서브 스왑 시) ──
+  window.addEventListener('message', ({ data }) => {
+    if (!data || data.type !== 'chzzk-mv-retrigger-wide') return;
+    if (wideModeTimer) {
+      clearInterval(wideModeTimer);
+      wideModeTimer = null;
+    }
+    wideModeTriggered = false;
+    triggerWideMode();
+  });
 
   // ── 채팅 패널 접기 ──
   let chatCollapsed = false;

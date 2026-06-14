@@ -152,7 +152,7 @@ function renderFollowingApiList(followList) {
       rightGroup.style.cssText = 'display:flex; gap:4px; flex-shrink:0; margin-left:6px;';
 
       const btnFav = document.createElement('button');
-      btnFav.textContent = inFavorite ? '★ 저장됨' : '☆ 즐겨찾기';
+      btnFav.textContent = inFavorite ? '★ 즐겨찾기' : '☆ 즐겨찾기';
       setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#6c757d');
       btnFav.disabled = inFavorite;
       btnFav.addEventListener('click', () => {
@@ -161,7 +161,7 @@ function renderFollowingApiList(followList) {
           if (list.some(s => s.channelId === channelId)) return;
           list.push({ channelId, name: channelName });
           chrome.storage.local.set({ favoriteMasterList: list }, () => {
-            btnFav.textContent = '★ 저장됨';
+            btnFav.textContent = '★ 즐겨찾기';
             btnFav.style.backgroundColor = '#e6a817';
             btnFav.disabled = true;
             loadAndRenderData();

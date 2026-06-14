@@ -2,7 +2,22 @@
   "permissions": {
     "allow": [
       "Read(//c/Users/jmhc6/.claude/**)",
-      "Bash(git stash *)"
+      "Bash(ls -la .. 2>/dev/null)",
+      "Read(//e/03_Study/Project/web/multiviewer/**)",
+      "Bash(git archive *)",
+      "Bash(git stash *)",
+      "Bash(git restore *)",
+      "WebSearch",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(git cherry-pick *)",
+      "Bash(grep -oE '\"content\":\"[^\"]{0,400}\"' \"C:\\\\Users\\\\jmhc6\\\\.claude\\\\projects\\\\e--03-Study-Project-web-multiviewer-source\\\\890fcec1-b37a-40b0-8e08-6a2d1fa541db.jsonl\")",
+      "Bash(grep -vE \"^.{500,}\")",
+      "Bash(awk 'NR>=460 && NR<=507' \"C:\\\\Users\\\\jmhc6\\\\.claude\\\\projects\\\\e--03-Study-Project-web-multiviewer-source\\\\890fcec1-b37a-40b0-8e08-6a2d1fa541db.jsonl\")",
+      "Bash(grep -oE '\"role\":\"user\".{0,600}')",
+      "Bash(awk 'NR>=350 && NR<=500' \"C:\\\\Users\\\\jmhc6\\\\.claude\\\\projects\\\\e--03-Study-Project-web-multiviewer-source\\\\890fcec1-b37a-40b0-8e08-6a2d1fa541db.jsonl\")",
+      "Bash(grep -oE '\"type\":\"text\",\"text\":\"[^\"]{0,400}\"')",
+      "Bash(grep -oE '\"type\":\"text\",\"text\":\"[^\"]{0,300}\"' \"C:\\\\Users\\\\jmhc6\\\\.claude\\\\projects\\\\e--03-Study-Project-web-multiviewer-source\\\\890fcec1-b37a-40b0-8e08-6a2d1fa541db.jsonl\")",
+      "Bash(git status *)"
     ]
   }
 }
