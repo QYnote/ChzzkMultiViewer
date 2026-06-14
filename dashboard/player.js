@@ -30,6 +30,37 @@ function checkLiveStatus(channelId, callback) {
   });
 }
 
+// ── 초기화 진행중 안내 오버레이 ──
+function createInitNotice() {
+  const notice = document.createElement('div');
+  notice.className = 'init-notice';
+  notice.textContent = '초기화 진행중입니다';
+  // 와이드 모드 전환 완료 신호가 오지 않는 경우를 대비한 안전장치 (최대 1분 시도 + 여유시간)
+  setTimeout(() => notice.remove(), 65000);
+  return notice;
+}
+
+// ── 수동 와이드 전환 필요 안내 오버레이 ──
+function createManualWideNotice(onRefresh) {
+  const notice = document.createElement('div');
+  notice.className = 'manual-wide-notice';
+  notice.innerHTML = `
+    <span class="manual-wide-label">수동 최대화 필요</span>
+    <span class="manual-wide-hint">영상 위에서 T 키를 눌러 와이드 화면으로 전환 후 클릭하여 닫기</span>
+    <button class="btn-manual-refresh">↻ 새로고침</button>
+  `;
+  notice.querySelector('.btn-manual-refresh').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onRefresh();
+    notice.remove();
+  });
+  notice.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notice.remove();
+  });
+  return notice;
+}
+
 // ── 비방송 안내 오버레이 ──
 function createOfflineNotice() {
   const notice = document.createElement('div');
@@ -42,6 +73,9 @@ function updateOfflineNotice(container, channelId, iframe) {
   checkLiveStatus(channelId, (openLive) => {
     const isOffline = openLive === false;
     container._isOffline = isOffline;
+
+    // 비방송 상태에서는 영상이 재생되지 않아 와이드 모드 전환 신호가 오지 않으므로 즉시 제거
+    if (isOffline) container.querySelector('.init-notice')?.remove();
 
     let notice = container.querySelector('.offline-notice');
     if (isOffline) {
@@ -123,6 +157,7 @@ function setMainPlayer(streamer) {
   mainInfoBar.style.display = 'flex';
   mainStreamerName.textContent = streamer.name;
   setChatFrame(streamer);
+  colMain.appendChild(createInitNotice());
   updateOfflineNotice(colMain, streamer.channelId, mainIframe);
 }
 
@@ -197,6 +232,9 @@ function createSubOverlay(name, iframe, tile) {
 
   overlay.querySelector('.btn-sub-refresh').addEventListener('click', (e) => {
     e.stopPropagation();
+    tile.querySelector('.init-notice')?.remove();
+    tile.querySelector('.manual-wide-notice')?.remove();
+    tile.appendChild(createInitNotice());
     iframe.src = `https://chzzk.naver.com/live/${tile.dataset.channelId}?mute=1&mv_ext=1`;
     lastVol = 50;
     setMutedUI(true);
@@ -233,6 +271,7 @@ function createSubTile(streamer) {
   tile._iframe = iframe;
   tile.appendChild(iframe);
   tile.appendChild(createSubOverlay(streamer.name, iframe, tile));
+  tile.appendChild(createInitNotice());
   updateOfflineNotice(tile, streamer.channelId, iframe);
 
   tile.addEventListener('click', (e) => {

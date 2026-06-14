@@ -7,6 +7,12 @@ function swapWithMain(clickedTile, subStreamer) {
   const subIframe     = clickedTile._iframe;
   const oldMainIframe = mainIframe;
 
+  // 스왑으로 와이드 모드가 풀릴 수 있으므로 기존 안내 오버레이 정리
+  colMain.querySelector('.init-notice')?.remove();
+  colMain.querySelector('.manual-wide-notice')?.remove();
+  clickedTile.querySelector('.init-notice')?.remove();
+  clickedTile.querySelector('.manual-wide-notice')?.remove();
+
   styleAsSub(oldMainIframe);
   clickedTile.insertBefore(oldMainIframe, clickedTile.firstChild);
 
@@ -25,6 +31,13 @@ function swapWithMain(clickedTile, subStreamer) {
   mainEmptyNotice.style.display = 'none';
   mainInfoBar.style.display = 'flex';
   setChatFrame(subStreamer);
+
+  // 와이드 모드 재시도: 새 메인/새 서브 양쪽에 초기화 안내 표시 + iframe에 재시도 요청
+  colMain.appendChild(createInitNotice());
+  clickedTile.appendChild(createInitNotice());
+  subIframe.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+  oldMainIframe.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+
   updateOfflineNotice(colMain, subStreamer.channelId, subIframe);
   updateOfflineNotice(clickedTile, prevMain.channelId, oldMainIframe);
 

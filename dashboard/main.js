@@ -41,6 +41,24 @@ chrome.storage.onChanged.addListener((changes) => {
 
 // ── 메인 플레이어 볼륨/딜레이 추적 (content.js → dashboard postMessage) ──
 window.addEventListener('message', (e) => {
+  if (e.data?.type === 'chzzk-mv-wide-done') {
+    if (e.source === mainIframe?.contentWindow) {
+      colMain.querySelector('.init-notice')?.remove();
+      if (e.data.success === false) {
+        colMain.appendChild(createManualWideNotice(() => btnMainRefresh?.click()));
+      }
+    } else {
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (e.source === tile._iframe?.contentWindow) {
+          tile.querySelector('.init-notice')?.remove();
+          if (e.data.success === false) {
+            tile.appendChild(createManualWideNotice(() => tile.querySelector('.btn-sub-refresh')?.click()));
+          }
+        }
+      });
+    }
+    return;
+  }
   if (e.data?.type === 'chzzk-mv-latency') {
     const sec = e.data.v;
     const text = `딜레이 ${sec.toFixed(1)}s`;
@@ -106,7 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
 function initButtonEvents() {
   btnReloadAll?.addEventListener('click', loadDashboard);
   btnMainRefresh?.addEventListener('click', () => {
-    if (mainIframe) mainIframe.src = buildIframeSrc(mainIframe);
+    if (!mainIframe) return;
+    colMain.querySelector('.init-notice')?.remove();
+    colMain.querySelector('.manual-wide-notice')?.remove();
+    colMain.appendChild(createInitNotice());
+    mainIframe.src = buildIframeSrc(mainIframe);
   });
 
   btnToggleChat?.addEventListener('click', () => {
