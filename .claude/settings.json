@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/jmhc6/.claude/**)"
+      "Read(//c/Users/jmhc6/.claude/**)",
+      "Bash(git stash *)"
     ]
   }
 }
