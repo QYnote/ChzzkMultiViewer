@@ -2,9 +2,8 @@
 function loadAndRenderData() {
   chrome.storage.local.get(['currentViewList', 'favoriteMasterList', 'systemSettings', 'dashboardLayout'], (result) => {
     const currentList = result.currentViewList || [];
-    renderStreamerList(currentViewListDiv, currentList, 'current');
-
     const favoriteList = result.favoriteMasterList || [];
+    renderStreamerList(currentViewListDiv, currentList, 'current', null, favoriteList);
     renderStreamerList(favoriteMasterListDiv, favoriteList, 'favorite', currentList);
 
     const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10 };
@@ -49,6 +48,19 @@ function moveStreamer(index, direction) {
     if (target < 0 || target >= list.length) return;
     [list[index], list[target]] = [list[target], list[index]];
     chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
+  });
+}
+
+// ── 시청목록 → 즐겨찾기 추가 ──
+function addToFavorite(streamer) {
+  chrome.storage.local.get(['favoriteMasterList'], (result) => {
+    const list = result.favoriteMasterList || [];
+    if (list.some(s => s.channelId === streamer.channelId)) return;
+    list.push({ channelId: streamer.channelId, name: streamer.name });
+    chrome.storage.local.set({ favoriteMasterList: list }, () => {
+      showToast(`${streamer.name}을(를) 즐겨찾기에 추가했습니다.`, 'success');
+      loadAndRenderData();
+    });
   });
 }
 
