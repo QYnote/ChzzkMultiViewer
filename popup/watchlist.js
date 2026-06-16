@@ -158,22 +158,6 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
       });
 
       actionGroup.appendChild(btnMore);
-    } else if (type === 'favorite') {
-      const inCurrent = (currentList || []).some(s => s.channelId === streamer.channelId);
-      const btnCopyToCurrent = document.createElement('button');
-      btnCopyToCurrent.textContent = inCurrent ? '추가됨' : '+ 시청';
-      setMiniButtonStyle(btnCopyToCurrent, inCurrent ? '#bbb' : '#00c73c');
-      btnCopyToCurrent.disabled = inCurrent;
-      btnCopyToCurrent.style.marginRight = '4px';
-      if (!inCurrent) btnCopyToCurrent.addEventListener('click', () => copyToCurrentView(streamer));
-
-      const btnDelFav = document.createElement('button');
-      btnDelFav.textContent = '삭제';
-      setMiniButtonStyle(btnDelFav, '#6c757d');
-      btnDelFav.addEventListener('click', () => deleteStreamer('favorite', index));
-
-      actionGroup.appendChild(btnCopyToCurrent);
-      actionGroup.appendChild(btnDelFav);
     }
 
     itemDiv.appendChild(actionGroup);

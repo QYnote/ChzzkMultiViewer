@@ -1,10 +1,25 @@
+// ── 즐겨찾기 트리 로드 (구 favoriteMasterList에서 자동 마이그레이션) ──
+function getFavoriteTree(callback) {
+  chrome.storage.local.get(['favoriteTree', 'favoriteMasterList'], (result) => {
+    if (result.favoriteTree) {
+      callback(result.favoriteTree);
+      return;
+    }
+    const items = (result.favoriteMasterList || []).map(s => ({ channelId: s.channelId, name: s.name }));
+    const tree = { id: 'root', name: '즐겨찾기', items, folders: [] };
+    chrome.storage.local.set({ favoriteTree: tree }, () => callback(tree));
+  });
+}
+
+// ── 즐겨찾기 트리 저장 ──
+function saveFavoriteTree(tree, callback) {
+  chrome.storage.local.set({ favoriteTree: tree }, callback || (() => {}));
+}
+
 // ── 스토리지 로드 및 전체 화면 렌더링 ──
 function loadAndRenderData() {
-  chrome.storage.local.get(['currentViewList', 'favoriteMasterList', 'systemSettings', 'dashboardLayout'], (result) => {
+  chrome.storage.local.get(['currentViewList', 'systemSettings', 'dashboardLayout'], (result) => {
     const currentList = result.currentViewList || [];
-    const favoriteList = result.favoriteMasterList || [];
-    renderStreamerList(currentViewListDiv, currentList, 'current', null, favoriteList);
-    renderStreamerList(favoriteMasterListDiv, favoriteList, 'favorite', currentList);
 
     const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10 };
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;
@@ -14,18 +29,23 @@ function loadAndRenderData() {
     document.querySelectorAll('.layout-opt').forEach(opt => {
       opt.classList.toggle('active', parseInt(opt.dataset.layout) === activeLayout);
     });
+
+    getFavoriteTree((tree) => {
+      const allFavIds = collectAllChannelIds(tree);
+      const favListForWatchlist = [...allFavIds].map(id => ({ channelId: id }));
+      renderStreamerList(currentViewListDiv, currentList, 'current', null, favListForWatchlist);
+      renderFavoriteTree(favoriteMasterListDiv, tree, currentList);
+    });
   });
 }
 
 // ── 스트리머 삭제 ──
 function deleteStreamer(type, index) {
-  const key = type === 'current' ? 'currentViewList' : 'favoriteMasterList';
-  chrome.storage.local.get([key], (result) => {
-    const list = result[key] || [];
+  if (type !== 'current') return;
+  chrome.storage.local.get(['currentViewList'], (result) => {
+    const list = result.currentViewList || [];
     list.splice(index, 1);
-    const saveData = {};
-    saveData[key] = list;
-    chrome.storage.local.set(saveData, () => loadAndRenderData());
+    chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
   });
 }
 
@@ -51,13 +71,13 @@ function moveStreamer(index, direction) {
   });
 }
 
-// ── 시청목록 → 즐겨찾기 추가 ──
+// ── 시청목록 → 즐겨찾기 추가 (Root에 추가) ──
 function addToFavorite(streamer) {
-  chrome.storage.local.get(['favoriteMasterList'], (result) => {
-    const list = result.favoriteMasterList || [];
-    if (list.some(s => s.channelId === streamer.channelId)) return;
-    list.push({ channelId: streamer.channelId, name: streamer.name });
-    chrome.storage.local.set({ favoriteMasterList: list }, () => {
+  getFavoriteTree((tree) => {
+    const allIds = collectAllChannelIds(tree);
+    if (allIds.has(streamer.channelId)) return;
+    tree.items.push({ channelId: streamer.channelId, name: streamer.name });
+    saveFavoriteTree(tree, () => {
       showToast(`${streamer.name}을(를) 즐겨찾기에 추가했습니다.`, 'success');
       loadAndRenderData();
     });

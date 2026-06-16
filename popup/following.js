@@ -111,86 +111,89 @@ function renderFollowingApiList(followList) {
   header.textContent = `총 ${followList.length}명 팔로잉 · LIVE ${liveCount}명`;
   followingApiListDiv.appendChild(header);
 
-  chrome.storage.local.get(['currentViewList', 'favoriteMasterList'], (result) => {
-    const currentList  = result.currentViewList    || [];
-    const favoriteList = result.favoriteMasterList || [];
+  chrome.storage.local.get(['currentViewList'], (result) => {
+    const currentList = result.currentViewList || [];
 
-    followList.forEach(item => {
-      const channelId   = item.channelId   ?? item.channel?.channelId;
-      const channelName = item.channelName ?? item.channel?.channelName;
-      const isLive      = item.openLive    ?? item.streamer?.openLive ?? false;
-      if (!channelId || !channelName) return;
+    getFavoriteTree((tree) => {
+      const allFavIds = collectAllChannelIds(tree);
 
-      const inCurrent  = currentList.some(s  => s.channelId === channelId);
-      const inFavorite = favoriteList.some(s => s.channelId === channelId);
+      followList.forEach(item => {
+        const channelId   = item.channelId   ?? item.channel?.channelId;
+        const channelName = item.channelName ?? item.channel?.channelName;
+        const isLive      = item.openLive    ?? item.streamer?.openLive ?? false;
+        if (!channelId || !channelName) return;
 
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 2px; border-bottom:1px solid #f2f2f2; font-size:12px;';
+        const inCurrent  = currentList.some(s => s.channelId === channelId);
+        const inFavorite = allFavIds.has(channelId);
 
-      const leftGroup = document.createElement('div');
-      leftGroup.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden; flex:1; min-width:0;';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 2px; border-bottom:1px solid #f2f2f2; font-size:12px;';
 
-      const nameSpan = document.createElement('span');
-      nameSpan.style.cssText = 'font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
-      nameSpan.textContent = channelName;
+        const leftGroup = document.createElement('div');
+        leftGroup.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden; flex:1; min-width:0;';
 
-      const badge = document.createElement('span');
-      badge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0;';
-      if (isLive) {
-        badge.textContent = 'LIVE';
-        badge.style.cssText += 'background:#e50914; color:#fff;';
-      } else {
-        badge.textContent = 'OFF';
-        badge.style.cssText += 'background:#e1e4e6; color:#767c82;';
-      }
+        const nameSpan = document.createElement('span');
+        nameSpan.style.cssText = 'font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+        nameSpan.textContent = channelName;
 
-      leftGroup.appendChild(nameSpan);
-      leftGroup.appendChild(badge);
-      row.appendChild(leftGroup);
+        const badge = document.createElement('span');
+        badge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0;';
+        if (isLive) {
+          badge.textContent = 'LIVE';
+          badge.style.cssText += 'background:#e50914; color:#fff;';
+        } else {
+          badge.textContent = 'OFF';
+          badge.style.cssText += 'background:#e1e4e6; color:#767c82;';
+        }
 
-      const rightGroup = document.createElement('div');
-      rightGroup.style.cssText = 'display:flex; gap:4px; flex-shrink:0; margin-left:6px;';
+        leftGroup.appendChild(nameSpan);
+        leftGroup.appendChild(badge);
+        row.appendChild(leftGroup);
 
-      const btnFav = document.createElement('button');
-      btnFav.textContent = inFavorite ? '★ 즐겨찾기' : '☆ 즐겨찾기';
-      setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#6c757d');
-      btnFav.disabled = inFavorite;
-      btnFav.addEventListener('click', () => {
-        chrome.storage.local.get(['favoriteMasterList'], (res) => {
-          const list = res.favoriteMasterList || [];
-          if (list.some(s => s.channelId === channelId)) return;
-          list.push({ channelId, name: channelName });
-          chrome.storage.local.set({ favoriteMasterList: list }, () => {
-            btnFav.textContent = '★ 즐겨찾기';
-            btnFav.style.backgroundColor = '#e6a817';
-            btnFav.disabled = true;
-            loadAndRenderData();
+        const rightGroup = document.createElement('div');
+        rightGroup.style.cssText = 'display:flex; gap:4px; flex-shrink:0; margin-left:6px;';
+
+        const btnFav = document.createElement('button');
+        btnFav.textContent = inFavorite ? '★ 즐겨찾기' : '☆ 즐겨찾기';
+        setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#6c757d');
+        btnFav.disabled = inFavorite;
+        btnFav.addEventListener('click', () => {
+          getFavoriteTree((t) => {
+            const ids = collectAllChannelIds(t);
+            if (ids.has(channelId)) return;
+            t.items.push({ channelId, name: channelName });
+            saveFavoriteTree(t, () => {
+              btnFav.textContent = '★ 즐겨찾기';
+              btnFav.style.backgroundColor = '#e6a817';
+              btnFav.disabled = true;
+              loadAndRenderData();
+            });
           });
         });
-      });
 
-      const btnAdd = document.createElement('button');
-      btnAdd.textContent = inCurrent ? '추가됨' : '+ 시청';
-      setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#00c73c');
-      btnAdd.disabled = inCurrent;
-      btnAdd.addEventListener('click', () => {
-        chrome.storage.local.get(['currentViewList'], (res) => {
-          const list = res.currentViewList || [];
-          if (list.some(s => s.channelId === channelId)) return;
-          list.push({ channelId, name: channelName });
-          chrome.storage.local.set({ currentViewList: list }, () => {
-            btnAdd.textContent = '추가됨';
-            btnAdd.style.backgroundColor = '#bbb';
-            btnAdd.disabled = true;
-            loadAndRenderData();
+        const btnAdd = document.createElement('button');
+        btnAdd.textContent = inCurrent ? '추가됨' : '+ 시청';
+        setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#00c73c');
+        btnAdd.disabled = inCurrent;
+        btnAdd.addEventListener('click', () => {
+          chrome.storage.local.get(['currentViewList'], (res) => {
+            const list = res.currentViewList || [];
+            if (list.some(s => s.channelId === channelId)) return;
+            list.push({ channelId, name: channelName });
+            chrome.storage.local.set({ currentViewList: list }, () => {
+              btnAdd.textContent = '추가됨';
+              btnAdd.style.backgroundColor = '#bbb';
+              btnAdd.disabled = true;
+              loadAndRenderData();
+            });
           });
         });
-      });
 
-      rightGroup.appendChild(btnFav);
-      rightGroup.appendChild(btnAdd);
-      row.appendChild(rightGroup);
-      followingApiListDiv.appendChild(row);
+        rightGroup.appendChild(btnFav);
+        rightGroup.appendChild(btnAdd);
+        row.appendChild(rightGroup);
+        followingApiListDiv.appendChild(row);
+      });
     });
   });
 }
