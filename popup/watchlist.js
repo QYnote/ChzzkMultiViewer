@@ -103,9 +103,6 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
       actionGroup.appendChild(btnDel);
 
       // ⋯ 더보기 버튼
-      const menuContainer = document.createElement('div');
-      menuContainer.style.cssText = 'position:relative; display:flex;';
-
       const btnMore = document.createElement('button');
       btnMore.textContent = '⋯';
       setMiniButtonStyle(btnMore, '#868e96');
@@ -116,7 +113,7 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
 
         const menu = document.createElement('div');
         menu.className = 'watchlist-more-menu';
-        menu.style.cssText = 'position:absolute; right:0; top:100%; margin-top:2px; background:#fff; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:100; min-width:130px; overflow:hidden;';
+        menu.style.cssText = 'position:fixed; background:#fff; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:130px; overflow:hidden;';
 
         const menuItemBase = 'padding:7px 12px; font-size:11px; white-space:nowrap;';
 
@@ -143,15 +140,24 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
           itemFav.addEventListener('click', (e) => { e.stopPropagation(); addToFavorite(streamer); menu.remove(); });
           menu.appendChild(itemFav);
         }
-        menuContainer.appendChild(menu);
+
+        document.body.appendChild(menu);
+
+        // 버튼 기준으로 위치 결정 (뷰포트 아래 잘리면 위로 뒤집기)
+        const btnRect = btnMore.getBoundingClientRect();
+        const menuHeight = menu.offsetHeight;
+        const top = (btnRect.bottom + menuHeight > window.innerHeight)
+          ? btnRect.top - menuHeight - 2
+          : btnRect.bottom + 2;
+        menu.style.top  = top + 'px';
+        menu.style.left = (btnRect.right - menu.offsetWidth) + 'px';
 
         setTimeout(() => {
           document.addEventListener('click', () => menu.remove(), { once: true });
         }, 0);
       });
 
-      menuContainer.appendChild(btnMore);
-      actionGroup.appendChild(menuContainer);
+      actionGroup.appendChild(btnMore);
     } else if (type === 'favorite') {
       const inCurrent = (currentList || []).some(s => s.channelId === streamer.channelId);
       const btnCopyToCurrent = document.createElement('button');
