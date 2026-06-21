@@ -203,7 +203,7 @@
 
   <!-- 탭 2: 즐겨찾기 관리 (보관함) -->
   <div id="tab2" class="tab-content">
-    <div class="list-container" id="favorite-master-list">
+    <div class="list-container" id="favorite-master-list" style="height:300px;">
       <!-- 영구 보관된 즐겨찾기 스트리머들이 렌더링될 곳 -->
       <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">보관함이 비어 있습니다.</p>
     </div>
@@ -250,6 +250,14 @@
       <label>기준 허용 지연 시간 (초)</label>
       <input type="number" id="num-limit-seconds" value="10" min="1" max="60" style="width: 60px; padding: 4px;">
     </div>
+    <div class="input-group" style="margin-top: 15px;">
+      <label>서브채널 프로필 사진 표시</label>
+      <select id="sel-profile-display" style="padding: 4px;">
+        <option value="always">항상 표시</option>
+        <option value="hover">마우스 올릴 때만 표시</option>
+        <option value="none">표시 안함</option>
+      </select>
+    </div>
     <p style="font-size: 11px; color: #666; margin-top: 20px; line-height: 1.4;">
       * 추후 채팅창 위치 설정 및 언어 변경 옵션이 이곳에 추가될 예정입니다.
     </p>
@@ -285,6 +293,7 @@
   <!-- 로직 연결용 스크립트 파일 매핑 -->
   <script src="popup/main.js"></script>
   <script src="popup/watchlist.js"></script>
+  <script src="popup/favorite-tree.js"></script>
   <script src="popup/storage.js"></script>
   <script src="popup/following.js"></script>
   <script src="popup/settings.js"></script>

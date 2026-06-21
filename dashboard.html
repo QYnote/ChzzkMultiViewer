@@ -207,6 +207,31 @@
       opacity: 1;
     }
 
+    /* ── 서브 타일 프로필 사진 (크기는 JS에서 타일 높이의 1/4, 원본 크기 중 작은 값으로 지정) ── */
+    .sub-profile-img {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      border-radius: 50%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .layout-wrapper[data-profile-display="always"] .sub-profile-img {
+      opacity: 1;
+    }
+
+    .layout-wrapper[data-profile-display="hover"] .sub-tile:hover .sub-profile-img {
+      opacity: 1;
+    }
+
+    .layout-wrapper[data-profile-display="none"] .sub-profile-img {
+      display: none;
+    }
+
     /* ── 비방송 안내 오버레이 ── */
     .offline-notice {
       position: absolute;

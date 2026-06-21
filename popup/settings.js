@@ -2,7 +2,8 @@
 function saveSettings() {
   const systemSettings = {
     isAutoSync: chkAutoSync ? chkAutoSync.checked : true,
-    limitSeconds: numLimitSeconds ? (parseInt(numLimitSeconds.value, 10) || 10) : 10
+    limitSeconds: numLimitSeconds ? (parseInt(numLimitSeconds.value, 10) || 10) : 10,
+    profileDisplay: selProfileDisplay ? selProfileDisplay.value : 'hover'
   };
   chrome.storage.local.set({ systemSettings });
 }
@@ -22,4 +23,5 @@ function initSettingsEvents() {
 
   if (chkAutoSync) chkAutoSync.addEventListener('change', saveSettings);
   if (numLimitSeconds) numLimitSeconds.addEventListener('input', saveSettings);
+  if (selProfileDisplay) selProfileDisplay.addEventListener('change', saveSettings);
 }

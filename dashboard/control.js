@@ -25,6 +25,12 @@ function swapWithMain(clickedTile, subStreamer) {
   clickedTile.dataset.name = prevMain.name;
   clickedTile.appendChild(createSubOverlay(prevMain.name, oldMainIframe, clickedTile));
 
+  // 프로필 사진도 새로 차지한 채널(prevMain) 기준으로 갱신
+  clickedTile.querySelector('.sub-profile-img')?.remove();
+  fetchChannelImage(prevMain.channelId, (imageUrl) => {
+    if (imageUrl) clickedTile.appendChild(createSubProfileImg(imageUrl, clickedTile));
+  });
+
   mainIframe = subIframe;
   currentMain = subStreamer;
   mainStreamerName.textContent = subStreamer.name;
@@ -83,6 +89,12 @@ function applyAutoSync(settings) {
     syncBadge.classList.remove('active');
     syncBadge.textContent = '';
   }
+}
+
+// ── 서브 프로필 사진 표시 모드 적용 ──
+function applyProfileDisplay(settings) {
+  const wrapper = document.querySelector('.layout-wrapper');
+  if (wrapper) wrapper.dataset.profileDisplay = settings.profileDisplay || 'hover';
 }
 
 // ── 레이아웃 복원 ──

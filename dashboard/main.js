@@ -34,7 +34,9 @@ var liveStatusTimer    = null;
 // ── 설정 변경 감지 (팝업에서 변경 시 즉시 반영) ──
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.systemSettings) {
-    applyAutoSync(changes.systemSettings.newValue || { isAutoSync: true, limitSeconds: 10 });
+    const settings = changes.systemSettings.newValue || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
+    applyAutoSync(settings);
+    applyProfileDisplay(settings);
   }
 });
 
@@ -164,6 +166,7 @@ function initButtonEvents() {
   resizeHandle?.addEventListener('mousedown', (e) => {
     if (colSub.classList.contains('sub-collapsed')) return;
     isResizing = true;
+    colSub.style.transition = 'none';
     resizeHandle.classList.add('dragging');
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
@@ -192,9 +195,10 @@ function initButtonEvents() {
       const wrapper = document.querySelector('.layout-wrapper');
       const rect = wrapper.getBoundingClientRect();
       const layout = wrapper.dataset.layout || '1';
+      const maxWidth = window.innerWidth * (2 / 5);
       const newWidth = layout === '2'
-        ? Math.max(120, Math.min(window.innerWidth * 0.3, rect.right - e.clientX))
-        : Math.max(120, Math.min(window.innerWidth * 0.3, e.clientX - rect.left));
+        ? Math.max(120, Math.min(maxWidth, rect.right - e.clientX))
+        : Math.max(120, Math.min(maxWidth, e.clientX - rect.left));
       colSub.style.width = newWidth + 'px';
       colSub.style.minWidth = newWidth + 'px';
     }
@@ -211,6 +215,7 @@ function initButtonEvents() {
     if (isResizing) {
       isResizing = false;
       resizeHandle.classList.remove('dragging');
+      colSub.style.transition = '';
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
       document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');

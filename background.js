@@ -145,15 +145,19 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     })
     .then(async response => {
       if (!response.ok) {
-        sendResponse({ success: false, openLive: null });
+        sendResponse({ success: false, openLive: null, channelImageUrl: null });
         return;
       }
       const data = await response.json();
-      sendResponse({ success: true, openLive: data?.content?.openLive ?? null });
+      sendResponse({
+        success: true,
+        openLive: data?.content?.openLive ?? null,
+        channelImageUrl: data?.content?.channelImageUrl ?? null
+      });
     })
     .catch(error => {
       console.error('Background Live Status Fetch Error:', error);
-      sendResponse({ success: false, openLive: null });
+      sendResponse({ success: false, openLive: null, channelImageUrl: null });
     });
 
     return true; // 비동기 연결 보존
