@@ -30,6 +30,34 @@ function checkLiveStatus(channelId, callback) {
   });
 }
 
+// ── 채널 프로필 사진 조회 (타일 생성 시 1회) ──
+function fetchChannelImage(channelId, callback) {
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId }, (response) => {
+    if (chrome.runtime.lastError || !response?.success) { callback(null); return; }
+    callback(response.channelImageUrl);
+  });
+}
+
+// ── 서브 타일 프로필 사진 엘리먼트 생성 ──
+// 크기 = 타일 높이의 1/4과 이미지 원본 크기 중 더 작은 값 (타일 크기 변경 시 자동 재계산)
+function createSubProfileImg(imageUrl, tile) {
+  const img = document.createElement('img');
+  img.className = 'sub-profile-img';
+  img.src = imageUrl;
+
+  function resize() {
+    const naturalSize = img.naturalHeight || Infinity;
+    const targetSize = Math.min(tile.clientHeight / 4, naturalSize);
+    img.style.width = targetSize + 'px';
+    img.style.height = targetSize + 'px';
+  }
+
+  img.addEventListener('load', resize);
+  new ResizeObserver(resize).observe(tile);
+
+  return img;
+}
+
 // ── 초기화 진행중 안내 오버레이 ──
 function createInitNotice() {
   const notice = document.createElement('div');
@@ -114,7 +142,7 @@ function loadDashboard() {
 
   chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
     const list     = result.currentViewList || [];
-    const settings = result.systemSettings  || { isAutoSync: true, limitSeconds: 10 };
+    const settings = result.systemSettings  || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
     loadedViewList = list.map(s => s.channelId);
 
     streamerCountEl.textContent = list.length;
@@ -135,6 +163,7 @@ function loadDashboard() {
     }
 
     applyAutoSync(settings);
+    applyProfileDisplay(settings);
     restoreLayoutState();
 
     liveStatusTimer = setInterval(refreshLiveStatusAll, 60000);
@@ -273,6 +302,10 @@ function createSubTile(streamer) {
   tile.appendChild(createSubOverlay(streamer.name, iframe, tile));
   tile.appendChild(createInitNotice());
   updateOfflineNotice(tile, streamer.channelId, iframe);
+
+  fetchChannelImage(streamer.channelId, (imageUrl) => {
+    if (imageUrl) tile.appendChild(createSubProfileImg(imageUrl, tile));
+  });
 
   tile.addEventListener('click', (e) => {
     if (!e.target.closest('.sub-controls')) {

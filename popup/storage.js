@@ -21,9 +21,10 @@ function loadAndRenderData() {
   chrome.storage.local.get(['currentViewList', 'systemSettings', 'dashboardLayout'], (result) => {
     const currentList = result.currentViewList || [];
 
-    const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10 };
+    const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;
     if (numLimitSeconds) numLimitSeconds.value = settings.limitSeconds;
+    if (selProfileDisplay) selProfileDisplay.value = settings.profileDisplay || 'hover';
 
     const activeLayout = result.dashboardLayout || 1;
     document.querySelectorAll('.layout-opt').forEach(opt => {

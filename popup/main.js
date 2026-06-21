@@ -14,6 +14,7 @@ var followingSyncContainer = document.getElementById('following-sync-container')
 var followingApiListDiv    = document.getElementById('following-api-list');
 var chkAutoSync            = document.getElementById('chk-auto-sync');
 var numLimitSeconds        = document.getElementById('num-limit-seconds');
+var selProfileDisplay      = document.getElementById('sel-profile-display');
 
 // ── 토스트 알림 ──
 var toastTimer = null;
