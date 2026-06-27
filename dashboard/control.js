@@ -94,7 +94,13 @@ function applyAutoSync(settings) {
 // ── 서브 프로필 사진 표시 모드 적용 ──
 function applyProfileDisplay(settings) {
   const wrapper = document.querySelector('.layout-wrapper');
-  if (wrapper) wrapper.dataset.profileDisplay = settings.profileDisplay || 'hover';
+  if (!wrapper) return;
+  // 이전 버전 저장값 마이그레이션
+  let display = settings.profileDisplay || 'hover-name';
+  if (display === 'always') display = 'always-profile';
+  if (display === 'hover')  display = 'hover-profile';
+  if (display === 'none')   display = 'hover-name';
+  wrapper.dataset.profileDisplay = display;
 }
 
 // ── 레이아웃 복원 ──

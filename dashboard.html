@@ -201,6 +201,7 @@
       opacity: 0;
       transition: opacity 0.15s;
       pointer-events: none;
+      z-index: 3;
     }
 
     .sub-tile:hover .sub-tile-overlay {
@@ -220,17 +221,49 @@
       z-index: 4;
     }
 
-    .layout-wrapper[data-profile-display="always"] .sub-profile-img {
-      opacity: 1;
-    }
-
-    .layout-wrapper[data-profile-display="hover"] .sub-tile:hover .sub-profile-img {
-      opacity: 1;
-    }
-
-    .layout-wrapper[data-profile-display="none"] .sub-profile-img {
+    /* ── 서브 타일 채널 이름 태그 (항상 표시 모드 전용) ── */
+    .sub-tile-name-tag {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      max-width: calc(100% - 32px);
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 2px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      z-index: 4;
       display: none;
     }
+
+    /* ── 서브채널 정보 표시 모드 ── */
+    /* 항상 표시 (프로필 사진) */
+    .layout-wrapper[data-profile-display="always-profile"] .sub-profile-img { opacity: 1; }
+    .layout-wrapper[data-profile-display="always-profile"] .sub-tile-name { display: none; }
+
+    /* 항상 표시 (채널 이름) */
+    .layout-wrapper[data-profile-display="always-name"] .sub-profile-img { display: none; }
+    .layout-wrapper[data-profile-display="always-name"] .sub-tile-name-tag { display: block; }
+    .layout-wrapper[data-profile-display="always-name"] .sub-tile-name { display: none; }
+
+    /* 마우스 올릴 때 (프로필 사진) */
+    .layout-wrapper[data-profile-display="hover-profile"] .sub-tile:hover .sub-profile-img { opacity: 1; }
+    .layout-wrapper[data-profile-display="hover-profile"] .sub-tile-name { display: none; }
+
+    /* 마우스 올릴 때 (채널 이름): 기존 오버레이 채널명이 호버 시 그대로 표시됨 */
+    .layout-wrapper[data-profile-display="hover-name"] .sub-profile-img { display: none; }
+
+    /* 표시 안함 */
+    .layout-wrapper[data-profile-display="none"] .sub-profile-img { display: none; }
+
+    /* ── 오프라인 타일: 삭제 버튼 항상 표시 ── */
+    .sub-tile.is-offline .sub-tile-overlay { opacity: 1; }
+    .sub-tile.is-offline .sub-controls { display: none; }
 
     /* ── 비방송 안내 오버레이 ── */
     .offline-notice {
@@ -320,10 +353,7 @@
     }
 
     .sub-tile-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      pointer-events: auto;
+      pointer-events: none;
     }
 
     .sub-tile-name {
@@ -337,8 +367,12 @@
       pointer-events: none;
     }
 
+    /* ✕ 버튼: 오버레이와 독립적으로 타일에 직접 배치 (opacity로 show/hide) */
     .btn-sub-remove {
-      flex-shrink: 0;
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      z-index: 5;
       background: rgba(255, 255, 255, 0.1);
       border: none;
       color: #e4e6ea;
@@ -350,9 +384,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 5px 5px 0 0;
-      transition: background 0.1s;
+      opacity: 0;
+      transition: background 0.1s, opacity 0.15s;
       line-height: 1;
+    }
+
+    .sub-tile:hover .btn-sub-remove,
+    .sub-tile.is-offline .btn-sub-remove {
+      opacity: 1;
     }
 
     .btn-sub-remove:hover {

@@ -21,10 +21,14 @@ function loadAndRenderData() {
   chrome.storage.local.get(['currentViewList', 'systemSettings', 'dashboardLayout'], (result) => {
     const currentList = result.currentViewList || [];
 
-    const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
+    const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover-name' };
+    // 이전 버전 저장값 마이그레이션
+    if (settings.profileDisplay === 'always') settings.profileDisplay = 'always-profile';
+    if (settings.profileDisplay === 'hover')  settings.profileDisplay = 'hover-profile';
+    if (settings.profileDisplay === 'none')   settings.profileDisplay = 'hover-name';
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;
     if (numLimitSeconds) numLimitSeconds.value = settings.limitSeconds;
-    if (selProfileDisplay) selProfileDisplay.value = settings.profileDisplay || 'hover';
+    if (selProfileDisplay) selProfileDisplay.value = settings.profileDisplay || 'hover-name';
 
     const activeLayout = result.dashboardLayout || 1;
     document.querySelectorAll('.layout-opt').forEach(opt => {
