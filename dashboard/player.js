@@ -101,6 +101,7 @@ function updateOfflineNotice(container, channelId, iframe) {
   checkLiveStatus(channelId, (openLive) => {
     const isOffline = openLive === false;
     container._isOffline = isOffline;
+    container.classList.toggle('is-offline', isOffline);
 
     // 비방송 상태에서는 영상이 재생되지 않아 와이드 모드 전환 신호가 오지 않으므로 즉시 제거
     if (isOffline) container.querySelector('.init-notice')?.remove();
@@ -142,7 +143,7 @@ function loadDashboard() {
 
   chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
     const list     = result.currentViewList || [];
-    const settings = result.systemSettings  || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
+    const settings = result.systemSettings  || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover-name' };
     loadedViewList = list.map(s => s.channelId);
 
     streamerCountEl.textContent = list.length;
@@ -212,7 +213,6 @@ function createSubOverlay(name, iframe, tile) {
   overlay.innerHTML = `
     <div class="sub-tile-top">
       <span class="sub-tile-name">${name}</span>
-      <button class="btn-sub-remove" title="서브채널 삭제">✕</button>
     </div>
     <div class="sub-controls">
       <button class="btn-ctrl btn-mute-toggle" title="음소거 토글">🔇</button>
@@ -269,21 +269,6 @@ function createSubOverlay(name, iframe, tile) {
     setMutedUI(true);
   });
 
-  overlay.querySelector('.btn-sub-remove').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const channelId = tile.dataset.channelId;
-    chrome.storage.local.get(['currentViewList'], (result) => {
-      const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
-      chrome.storage.local.set({ currentViewList: list }, () => {
-        tile.remove();
-        streamerCountEl.textContent = list.length;
-        if (list.length <= 1) {
-          subStreamList.innerHTML = '<p class="sub-empty-msg">서브 채널이<br>없습니다.</p>';
-        }
-      });
-    });
-  });
-
   updateSliderStyle();
   return overlay;
 }
@@ -300,6 +285,32 @@ function createSubTile(streamer) {
   tile._iframe = iframe;
   tile.appendChild(iframe);
   tile.appendChild(createSubOverlay(streamer.name, iframe, tile));
+
+  const btnRemove = document.createElement('button');
+  btnRemove.className = 'btn-sub-remove';
+  btnRemove.title = '서브채널 삭제';
+  btnRemove.textContent = '✕';
+  btnRemove.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const channelId = tile.dataset.channelId;
+    chrome.storage.local.get(['currentViewList'], (result) => {
+      const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
+      chrome.storage.local.set({ currentViewList: list }, () => {
+        tile.remove();
+        streamerCountEl.textContent = list.length;
+        if (list.length <= 1) {
+          subStreamList.innerHTML = '<p class="sub-empty-msg">서브 채널이<br>없습니다.</p>';
+        }
+      });
+    });
+  });
+  tile.appendChild(btnRemove);
+
+  const nameTag = document.createElement('div');
+  nameTag.className = 'sub-tile-name-tag';
+  nameTag.textContent = streamer.name;
+  tile.appendChild(nameTag);
+
   tile.appendChild(createInitNotice());
   updateOfflineNotice(tile, streamer.channelId, iframe);
 

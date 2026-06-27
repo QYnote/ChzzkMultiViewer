@@ -34,7 +34,7 @@ var liveStatusTimer    = null;
 // ── 설정 변경 감지 (팝업에서 변경 시 즉시 반영) ──
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.systemSettings) {
-    const settings = changes.systemSettings.newValue || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover' };
+    const settings = changes.systemSettings.newValue || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover-name' };
     applyAutoSync(settings);
     applyProfileDisplay(settings);
   }

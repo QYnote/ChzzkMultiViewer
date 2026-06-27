@@ -3,7 +3,7 @@ function saveSettings() {
   const systemSettings = {
     isAutoSync: chkAutoSync ? chkAutoSync.checked : true,
     limitSeconds: numLimitSeconds ? (parseInt(numLimitSeconds.value, 10) || 10) : 10,
-    profileDisplay: selProfileDisplay ? selProfileDisplay.value : 'hover'
+    profileDisplay: selProfileDisplay ? selProfileDisplay.value : 'hover-name'
   };
   chrome.storage.local.set({ systemSettings });
 }
