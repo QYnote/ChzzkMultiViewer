@@ -92,16 +92,12 @@ window.addEventListener('message', (e) => {
     return;
   }
   if (e.data?.type !== 'chzzk-mv-vol') return;
-  console.log('[mv-vol] 수신:', e.data.v, '| mainIframe 있음:', !!mainIframe, '| source 일치:', e.source === mainIframe?.contentWindow);
   if (!mainIframe) return;
   try {
     if (e.source === mainIframe.contentWindow) {
       mainIframe._trackedVol = e.data.v;
-      console.log('[mv-vol] _trackedVol 저장:', mainIframe._trackedVol);
     }
-  } catch (err) {
-    console.error('[mv-vol] 추적 오류:', err);
-  }
+  } catch (err) {}
 });
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -120,6 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initButtonEvents();
   restoreChatState();
   restoreLayoutState();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    lastLatencyTime = Date.now();
+    document.querySelectorAll('.sub-tile').forEach(tile => {
+      tile._lastLatencyTime = Date.now();
+    });
+  }
 });
 
 // ── 버튼 이벤트 바인딩 ──

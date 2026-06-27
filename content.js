@@ -42,13 +42,9 @@
         if (forceMuted && !v.muted) {
           applyVolume(v, 0);
         } else if (!forceMuted) {
-          console.log('[mv-vol] 볼륨 변경 감지, 대시보드로 전송:', v.volume, '| parent:', window.parent !== window);
           try {
             window.parent.postMessage({ type: 'chzzk-mv-vol', v: v.volume }, '*');
-            console.log('[mv-vol] postMessage 전송 완료');
-          } catch (err) {
-            console.error('[mv-vol] postMessage 실패:', err);
-          }
+          } catch (err) {}
         }
       }, true);
 
@@ -85,6 +81,11 @@
   }
 
   function pressT() {
+    const wideBtn = document.querySelector('[aria-label="넓은 화면"]');
+    if (wideBtn) {
+      wideBtn.click();
+      return;
+    }
     const video = document.querySelector('video');
     const target = (video && video.closest('[tabindex]')) || document.body;
     try { window.focus(); } catch (e) {}
@@ -119,7 +120,7 @@
         wideModeTimer = null;
         window.parent.postMessage({ type: 'chzzk-mv-wide-done', success: false }, '*');
       }
-    }, 1000);
+    }, 300);
   }
 
   // ── postMessage: 와이드 모드 재시도 (메인↔서브 스왑 시) ──
@@ -129,6 +130,17 @@
       clearInterval(wideModeTimer);
       wideModeTimer = null;
     }
+    wideModeTriggered = false;
+    triggerWideMode();
+  });
+
+  // ── 탭 복귀 시 와이드 모드 재시도 ──
+  // 비활성 탭에서는 pressT()가 동작하지 않아 와이드 모드 전환이 실패할 수 있음
+  // 탭으로 돌아왔을 때 와이드 모드가 안 된 상태면 다시 시도
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!wideModeTriggered || isWideMode()) return;
+    if (wideModeTimer) { clearInterval(wideModeTimer); wideModeTimer = null; }
     wideModeTriggered = false;
     triggerWideMode();
   });
