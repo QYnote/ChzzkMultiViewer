@@ -18,31 +18,9 @@ chrome.cookies.onChanged.addListener(({ cookie }) => {
 
 function setupNetworkCookieRules() {
   if (!chrome.declarativeNetRequest) return;
-
-  const RULE_ID = 2002;
-  const chzzkRule = {
-    id: RULE_ID,
-    priority: 1,
-    action: {
-      type: "modifyHeaders",
-      requestHeaders: [
-        { header: "Origin", operation: "set", value: "https://chzzk.naver.com" },
-        { header: "Referer", operation: "set", value: "https://chzzk.naver.com/" }
-      ]
-    },
-    condition: {
-      urlFilter: "https://api.chzzk.naver.com/*",
-      resourceTypes: ["xmlhttprequest"]
-    }
-  };
-
-  // 기존 규칙 초기화 후 크로스 도메인 쿠키 공유 필터 규칙 해제 등록
-  chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [RULE_ID],
-    addRules: [chzzkRule]
-  }, () => {
-    console.log("치지직 세션 패스 네트워크 규칙이 정상 등록되었습니다.");
-  });
+  // 이전 버전에서 등록된 Origin/Referer 변조 규칙 일괄 제거 (레거시 1001 포함)
+  // 규칙이 활성화된 상태에서는 game.naver.com 등 타 도메인의 CORS가 깨지는 부작용 존재
+  chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001, 2002] });
 }
 
 // 브라우저의 네이버 로그인 쿠키를 읽어 iframe 및 API 요청에 직접 주입
