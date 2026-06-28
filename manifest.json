@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "MultiStream",
-    "version": "1.5.0",
+    "version": "2.0.0",
     "description":"방송 여러개 띄워서 보는 멀티뷰 크롬 확장프로그램",
     "permissions":[
         "storage",

@@ -140,49 +140,6 @@ source/
 
 - [ ] 버그 제보 기능 추가
 - [ ] 광고 재생 중 자동 동기화가 새로고침을 실행하는 문제 수정 (치지직·SOOP 공통)
-- [x] 팝업 UI 전면 개편 — 탭 구조 2개로 통합 (시청목록 / 기타설정), 플랫폼 아이콘 추가
-- [x] 아프리카TV(SOOP) 채널 멀티뷰 지원 추가
-  - [x] 스트리밍 iframe URL 형식
-    - 방송 페이지 URL: `https://play.sooplive.com/{스트리머ID}?mv_ext=1`
-    - 치지직과 동일하게 이 URL을 iframe에 직접 삽입하는 방식으로 동작 확인
-    - SOOP 고화질 플레이어가 로컬 앱 감지를 위해 127.0.0.1에 연결을 시도하는데, 확장프로그램에서 이 요청을 사전 차단하여 브라우저 권한 팝업이 뜨지 않도록 처리함. 단, SOOP 자체 고화질 플레이어 기능(별도 앱 설치 방식)은 대신 HLS 방식으로 자동 대체됨.
-    - 연결 차단으로 인해 SOOP 플레이어가 "고화질 스트리머 연결이 차단되었습니다" 안내 팝업을 표시하는데, 확장프로그램에서 자동으로 닫기 버튼을 클릭하여 처리함.
-  - [x] 방송 중 여부 확인 API 엔드포인트 및 응답 구조
-    - 엔드포인트: `POST https://live.sooplive.com/afreeca/player_live_api.php?bjid={채널ID}`
-    - POST body (form-urlencoded): `bid={채널ID}&bno=&type=live&pwd=&player_type=html5&stream_type=common&quality=HD&mode=landing&from_api=0&is_revive=false`
-    - 방송 중: 응답의 `CHANNEL.RESULT === 1` 이고 `CHANNEL.BSTATUS === "BROADING"`
-    - 방송 종료: `CHANNEL.RESULT === 0`
-    - 요청 시 `Origin: https://play.sooplive.com` 헤더 필요 (CORS)
-  - [x] 채널 프로필 사진 URL 획득 방법 (같은 API 응답에 포함되는지 여부)
-    - 고정 URL 패턴으로 생성 가능 (API 호출 불필요)
-    - `https://stimg.sooplive.com/LOGO/{채널ID 앞 2글자}/{채널ID}/m/{채널ID}.webp`
-    - 예: `inehine` → `https://stimg.sooplive.com/LOGO/in/inehine/m/inehine.webp`
-  - [x] 팔로잉 목록 API 엔드포인트 및 응답 구조
-    - `preferbjOnLnbController.php` 는 SOOP 추천 목록이므로 사용 불가
-    - 엔드포인트: `GET https://myapi.sooplive.com/api/favorite`
-    - Origin: `https://www.sooplive.com` (CORS)
-    - 응답 구조: `data[]` 배열
-    - 항목별 필드: `user_id`(채널ID), `user_nick`(닉네임), `is_live`(방송 중 여부)
-    - 방송 중: `is_live: true`이고 `broad_info[]`에 방송 상세 정보 포함 (`broad_no`, `broad_start`, `broad_title` 등)
-    - 방송 종료: `is_live: false`이고 `broad_info: []` (빈 배열)
-  - [x] 로그인 상태 확인 방법 (어떤 쿠키로 로그인 여부 판별하는지)
-    - `.sooplive.co.kr` 도메인의 `isBbs=1` 쿠키 존재 여부로 로그인 판별
-    - `BbsTicket` 쿠키에 유저 ID가 담겨 있음 (로그인 시 생성)
-  - [x] 쿠키 인증 도메인 (API 요청 시 어느 도메인 쿠키가 필요한지)
-    - 인증 쿠키 도메인: `.sooplive.co.kr`
-  - [x] 채널 ID 형식 (자릿수, 문자 구성)
-    - 문자열 형식 (예: `madaomm`, `inehine`) — 치지직 32자리 hex와 다름
-  - [x] 와이드(전체화면) 모드 버튼의 HTML 셀렉터 (개발자 도구로 확인)
-    - 셀렉터: `.btn_screen_mode`
-  - [x] 와이드 모드 활성 상태를 구분할 수 있는 CSS 클래스 또는 속성
-    - `body` 태그에 `screen_mode` 클래스 존재 여부로 판별
-    - 일반 상태: `class="ratio169_mode"` / 와이드 상태: `class="ratio169_mode screen_mode"`
-
-### 배포 전 필수 완료 항목 (v2.0.0)
-
-> 아래 항목이 모두 완료되기 전에는 배포하지 않는다.
-
-- [ ] 버전을 2.0.0으로 변경
 
 ### 개발 제외 항목
 
@@ -192,7 +149,16 @@ source/
 
 ## 버전 수정 내역
 
-### v1.5.0 (현재 배포 버전)
+### v2.0.0 (현재 배포 버전)
+- 프로그램명 MultiStream으로 변경
+- SOOP(아프리카TV) 채널 멀티뷰 지원 추가
+- 팝업 UI 전면 개편 — 시청목록 / 기타설정 2탭 구조로 통합
+- 대시보드 표시 목록에서 멀티뷰 목록과 즐겨찾기를 나란히 표시
+- 팔로잉 목록 및 즐겨찾기에 치지직 / SOOP 플랫폼 아이콘 표시
+- LIVE 배지 위치 개선 — 이름보다 앞에 표시
+- 확장 아이콘 및 UI 색상 전면 교체
+
+### v1.5.0
 - 방송 중이 아닌 서브채널에서도 삭제 버튼이 항상 표시되도록 개선
 - 서브채널 정보 표시 방식 선택 기능 추가 (프로필 사진 또는 채널 이름, 항상 표시 / 마우스 올릴 때 중 선택)
 - 치지직 외 페이지(스튜디오, 드롭스 등) 방문 시 오류 발생하던 문제 수정
