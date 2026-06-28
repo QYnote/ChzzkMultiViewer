@@ -70,8 +70,8 @@ function getDropPos(e, el) {
 
 // ── 삽입 인디케이터 스타일 ──
 function setInsertLine(el, pos) {
-  el.style.borderTop    = pos === 'before' ? '2px solid #00c73c' : '';
-  el.style.borderBottom = pos === 'after'  ? '2px solid #00c73c' : '';
+  el.style.borderTop    = pos === 'before' ? '2px solid #3B9ED6' : '';
+  el.style.borderBottom = pos === 'after'  ? '2px solid #3B9ED6' : '';
 }
 function clearInsertLine(el) {
   el.style.borderTop = '';
@@ -121,7 +121,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   row.draggable = true;
 
   row.addEventListener('dragstart', (e) => {
-    dragState = { type: 'item', channelId: item.channelId, name: item.name, sourceFolderId: folderId };
+    const inferredPlatform = item.platform || (/^[0-9a-f]{32}$/i.test(item.channelId) ? 'chzzk' : 'soop');
+    dragState = { type: 'item', channelId: item.channelId, name: item.name, platform: inferredPlatform, sourceFolderId: folderId };
     setTimeout(() => { row.style.opacity = '0.4'; }, 0);
     e.dataTransfer.effectAllowed = 'move';
     e.stopPropagation();
@@ -163,6 +164,14 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const left = document.createElement('div');
   left.style.cssText = 'display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden;';
 
+  const iconEl = document.createElement('img');
+  iconEl.className = 'platform-icon';
+  iconEl.src = (item.platform === 'soop')
+    ? 'resources/soop_icon_16.jpg'
+    : 'resources/chzzk_icon_16.jpg';
+  iconEl.alt = '';
+  left.appendChild(iconEl);
+
   const nameEl = document.createElement('strong');
   nameEl.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
   nameEl.textContent = item.name;
@@ -170,7 +179,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const liveBadge = document.createElement('span');
   liveBadge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
   liveBadge.textContent = 'OFF';
-  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: item.channelId }, (response) => {
+  const itemPlatform = item.platform || (/^[0-9a-f]{32}$/i.test(item.channelId) ? 'chzzk' : 'soop');
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: item.channelId, platform: itemPlatform }, (response) => {
     if (!response?.success || response.openLive == null) return;
     liveBadge.style.visibility = 'visible';
     if (response.openLive) {
@@ -184,8 +194,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
     }
   });
 
-  left.appendChild(nameEl);
   left.appendChild(liveBadge);
+  left.appendChild(nameEl);
 
   const btnGroup = document.createElement('div');
   btnGroup.style.cssText = 'display:flex; gap:2px; flex-shrink:0;';
@@ -193,7 +203,7 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const inCurrent = (currentList || []).some(s => s.channelId === item.channelId);
   const btnCopy = document.createElement('button');
   btnCopy.textContent = inCurrent ? '추가됨' : '+ 시청';
-  setMiniButtonStyle(btnCopy, inCurrent ? '#bbb' : '#00c73c');
+  setMiniButtonStyle(btnCopy, inCurrent ? '#bbb' : '#3B9ED6');
   btnCopy.disabled = inCurrent;
   btnCopy.style.padding = '2px 6px';
   if (!inCurrent) {
@@ -255,8 +265,8 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         // 항목 → 이 폴더로 이동
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        header.style.background = '#e0f5e8';
-        header.style.outline = '1px dashed #00c73c';
+        header.style.background = '#EAF5FD';
+        header.style.outline = '1px dashed #3B9ED6';
         clearInsertLine(header);
       } else if (dragState.type === 'folder' && dragState.folderId !== folder.id) {
         // 폴더 → 같은 레벨 재정렬
@@ -288,7 +298,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         const target = findFolderNode(tree, folder.id);
         if (!target) return;
         if (!target.items) target.items = [];
-        target.items.push({ channelId: dragState.channelId, name: dragState.name });
+        target.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
         dragState = null;
         saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
 
@@ -361,7 +371,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
 
     const btnDel = document.createElement('button');
     btnDel.textContent = '삭제';
-    setMiniButtonStyle(btnDel, '#6c757d');
+    setMiniButtonStyle(btnDel, '#5A8FAA');
     btnDel.style.padding = '1px 5px';
     btnDel.style.fontSize = '10px';
     btnDel.style.marginLeft = '2px';
@@ -401,8 +411,8 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!dragState || dragState.type !== 'item' || dragState.sourceFolderId === 'root') return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      addRow.style.background = '#e0f5e8';
-      addRow.style.outline = '1px dashed #00c73c';
+      addRow.style.background = '#EAF5FD';
+      addRow.style.outline = '1px dashed #3B9ED6';
     });
     addRow.addEventListener('dragleave', () => {
       addRow.style.background = '';
@@ -415,7 +425,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!dragState || dragState.type !== 'item' || dragState.sourceFolderId === 'root') return;
       removeItemFromTree(tree, dragState.channelId);
       if (!tree.items) tree.items = [];
-      tree.items.push({ channelId: dragState.channelId, name: dragState.name });
+      tree.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
       dragState = null;
       saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
     });

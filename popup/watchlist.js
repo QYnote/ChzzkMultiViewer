@@ -32,14 +32,18 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
 
     const textSpan = document.createElement('span');
     textSpan.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden;';
+
+    const iconEl = document.createElement('img');
+    iconEl.className = 'platform-icon';
+    iconEl.src = (streamer.platform === 'soop')
+      ? 'resources/soop_icon_16.jpg'
+      : 'resources/chzzk_icon_16.jpg';
+    iconEl.alt = '';
+    textSpan.appendChild(iconEl);
+
     const nameStrong = document.createElement('strong');
     nameStrong.textContent = streamer.name;
-    const idSpan = document.createElement('span');
-    idSpan.style.cssText = 'color:#999; font-size:10px;';
-    idSpan.textContent = `(${streamer.channelId.substring(0, 6)}...)`;
     textSpan.appendChild(nameStrong);
-    textSpan.appendChild(document.createTextNode(' '));
-    textSpan.appendChild(idSpan);
 
     if (type === 'favorite') {
       const liveBadge = document.createElement('span');
@@ -47,16 +51,12 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
       liveBadge.textContent = 'OFF';
       textSpan.appendChild(liveBadge);
 
-      chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: streamer.channelId }, (response) => {
+      chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: streamer.channelId, platform: streamer.platform || 'chzzk' }, (response) => {
         if (!response?.success || response.openLive == null) return;
         liveBadge.style.visibility = 'visible';
-        if (response.openLive) {
-          liveBadge.textContent = 'LIVE';
-          liveBadge.style.cssText += 'background:#e50914; color:#fff;';
-        } else {
-          liveBadge.textContent = 'OFF';
-          liveBadge.style.cssText += 'background:#e1e4e6; color:#767c82;';
-        }
+        liveBadge.textContent = response.openLive ? 'LIVE' : 'OFF';
+        liveBadge.style.background = response.openLive ? '#e50914' : '#e1e4e6';
+        liveBadge.style.color = response.openLive ? '#fff' : '#767c82';
       });
     }
 
@@ -169,6 +169,28 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
 function initWatchlistEvents() {
   if (!btnAddManual) return;
 
+  // 플랫폼 선택 시 채널 ID 라벨/플레이스홀더 변경 + 팔로잉 섹션 토글
+  document.querySelectorAll('input[name="platform-select"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const chzzkSection = document.getElementById('chzzk-following-section');
+      const soopSection  = document.getElementById('soop-following-section');
+      const isSoop = radio.value === 'soop';
+
+      if (inputChannelId && labelChannelId) {
+        if (isSoop) {
+          labelChannelId.textContent = 'SOOP 채널 ID';
+          inputChannelId.placeholder = '예: madaomm (방송 URL에서 복사)';
+        } else {
+          labelChannelId.textContent = '채널 고유 ID (32자리 난수)';
+          inputChannelId.placeholder = '예: 2b3c4d... 주소창에서 복사';
+        }
+      }
+
+      if (chzzkSection) chzzkSection.style.display = isSoop ? 'none' : '';
+      if (soopSection)  soopSection.style.display  = isSoop ? '' : 'none';
+    });
+  });
+
   if (inputStreamerName) {
     inputStreamerName.addEventListener('input', () => {
       const filtered = inputStreamerName.value.replace(/[<>"'&]/g, '');
@@ -178,26 +200,36 @@ function initWatchlistEvents() {
       }
     });
   }
+
   btnAddManual.addEventListener('click', () => {
     const channelId = inputChannelId.value.trim();
     const name = inputStreamerName.value.trim();
+    const platform = document.querySelector('input[name="platform-select"]:checked')?.value || 'chzzk';
 
     if (!channelId || !name) {
       showToast('채널 고유 ID와 스트리머 별명을 모두 입력해 주세요.', 'error');
       return;
     }
-    if (channelId.length !== 32) {
-      showToast('치지직 채널 ID는 32자리 문자열이어야 합니다.', 'error');
-      return;
+
+    if (platform === 'chzzk') {
+      if (channelId.length !== 32) {
+        showToast('치지직 채널 ID는 32자리 문자열이어야 합니다.', 'error');
+        return;
+      }
+    } else if (platform === 'soop') {
+      if (!/^[a-z0-9]+$/i.test(channelId)) {
+        showToast('SOOP 채널 ID는 영문자와 숫자만 사용 가능합니다.', 'error');
+        return;
+      }
     }
 
     chrome.storage.local.get(['currentViewList'], (result) => {
       const currentList = result.currentViewList || [];
-      if (currentList.some(s => s.channelId === channelId)) {
+      if (currentList.some(s => s.channelId === channelId && s.platform === platform)) {
         showToast('이미 현재 시청 목록에 등록되어 있는 스트리머입니다.', 'error');
         return;
       }
-      currentList.push({ channelId, name });
+      currentList.push({ channelId, name, platform });
       chrome.storage.local.set({ currentViewList: currentList }, () => {
         showToast(`${name} 스트리머가 시청 목록에 추가되었습니다.`, 'success');
         if (inputChannelId) inputChannelId.value = '';

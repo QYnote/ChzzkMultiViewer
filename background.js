@@ -1,7 +1,10 @@
+importScripts('platforms/chzzk.js', 'platforms/soop.js', 'platforms/index.js');
+
 // 서비스 워커 가동 시 SameSite 쿠키 제한을 무력화하는 브라우저 네트워크 규칙 강제 바인딩
 chrome.runtime.onInstalled.addListener(() => {
   setupNetworkCookieRules();
   injectSessionCookies();
+  registerSoopMainWorldScript();
 });
 
 chrome.runtime.onStartup.addListener(() => {
@@ -9,12 +12,28 @@ chrome.runtime.onStartup.addListener(() => {
   injectSessionCookies();
 });
 
-// 네이버 로그인/로그아웃 감지 → 쿠키 규칙 갱신
+// 네이버/SOOP 로그인·로그아웃 감지 → 쿠키 규칙 갱신
 chrome.cookies.onChanged.addListener(({ cookie }) => {
-  if (cookie.domain.includes('naver.com')) {
+  if (cookie.domain.includes('naver.com') || cookie.domain.includes('sooplive')) {
     injectSessionCookies();
   }
 });
+
+// SOOP iframe 내 127.0.0.1 연결 차단 스크립트를 MAIN 월드에 등록
+// manifest content_scripts의 world 속성은 실제 MAIN 월드 실행을 보장하지 않아 API 방식 사용
+function registerSoopMainWorldScript() {
+  if (!chrome.scripting) return;
+  chrome.scripting.unregisterContentScripts({ ids: ['soop-main-world'] })
+    .catch(() => {})
+    .then(() => chrome.scripting.registerContentScripts([{
+      id: 'soop-main-world',
+      matches: ['https://play.sooplive.com/*'],
+      js: ['content-soop-main.js'],
+      runAt: 'document_start',
+      world: 'MAIN',
+      allFrames: true
+    }]));
+}
 
 function setupNetworkCookieRules() {
   if (!chrome.declarativeNetRequest) return;
@@ -23,62 +42,68 @@ function setupNetworkCookieRules() {
   chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001, 2002] });
 }
 
-// 브라우저의 네이버 로그인 쿠키를 읽어 iframe 및 API 요청에 직접 주입
+// 브라우저의 로그인 쿠키를 읽어 iframe 및 API 요청에 직접 주입
 // (chrome-extension:// 오리진에서 SameSite=Lax 쿠키가 차단되는 문제 우회)
 async function injectSessionCookies() {
   if (!chrome.cookies || !chrome.declarativeNetRequest) return;
 
-  const IFRAME_RULE_ID = 2003; // chzzk.naver.com iframe(sub_frame) 쿠키 주입
-  const API_RULE_ID    = 2004; // api.chzzk.naver.com fetch(xmlhttprequest) 쿠키 주입
+  const CHZZK_IFRAME_RULE_ID = 2003; // chzzk.naver.com iframe 쿠키 주입
+  const CHZZK_API_RULE_ID    = 2004; // api.chzzk.naver.com fetch 쿠키 주입
+  const SOOP_IFRAME_RULE_ID  = 2005; // play.sooplive.com iframe 쿠키 주입
+  const SOOP_API_RULE_ID     = 2006; // live.sooplive.com fetch 쿠키 주입
 
   try {
-    // chzzk.naver.com 쿠키 + 네이버 공통 인증 쿠키(NID_AUT, NID_SES 등) 모두 수집
-    const [chzzkCookies, naverCookies] = await Promise.all([
+    const [chzzkCookies, naverCookies, soopComCookies, soopCoKrCookies] = await Promise.all([
       chrome.cookies.getAll({ url: 'https://chzzk.naver.com/' }),
-      chrome.cookies.getAll({ url: 'https://naver.com/' })
+      chrome.cookies.getAll({ url: 'https://naver.com/' }),
+      chrome.cookies.getAll({ url: 'https://www.sooplive.com/' }),
+      chrome.cookies.getAll({ url: 'https://www.sooplive.co.kr/' })
     ]);
 
-    // 이름 기준 중복 제거 (chzzk 쿠키 우선)
-    const cookieMap = new Map();
-    naverCookies.forEach(c => cookieMap.set(c.name, c.value));
-    chzzkCookies.forEach(c => cookieMap.set(c.name, c.value));
+    // 치지직: 이름 기준 중복 제거 (chzzk 쿠키 우선)
+    const chzzkCookieMap = new Map();
+    naverCookies.forEach(c => chzzkCookieMap.set(c.name, c.value));
+    chzzkCookies.forEach(c => chzzkCookieMap.set(c.name, c.value));
 
-    if (cookieMap.size === 0) {
-      chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [IFRAME_RULE_ID, API_RULE_ID] });
-      return;
-    }
+    // SOOP: 이름 기준 중복 제거 (.com 쿠키 우선)
+    const soopCookieMap = new Map();
+    soopCoKrCookies.forEach(c => soopCookieMap.set(c.name, c.value));
+    soopComCookies.forEach(c => soopCookieMap.set(c.name, c.value));
 
-    const cookieStr = [...cookieMap.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+    const rulesToRemove = [CHZZK_IFRAME_RULE_ID, CHZZK_API_RULE_ID, SOOP_IFRAME_RULE_ID, SOOP_API_RULE_ID, SOOP_API_RULE_ID + 1]; // 2006·2007은 이제 추가하지 않고 제거만 함
+    const rulesToAdd = [];
 
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [IFRAME_RULE_ID, API_RULE_ID],
-      addRules: [
+    if (chzzkCookieMap.size > 0) {
+      const chzzkCookieStr = [...chzzkCookieMap.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+      rulesToAdd.push(
         {
-          id: IFRAME_RULE_ID,
+          id: CHZZK_IFRAME_RULE_ID,
           priority: 2,
-          action: {
-            type: 'modifyHeaders',
-            requestHeaders: [{ header: 'Cookie', operation: 'set', value: cookieStr }]
-          },
-          condition: {
-            urlFilter: 'https://chzzk.naver.com/*',
-            resourceTypes: ['sub_frame']
-          }
+          action: { type: 'modifyHeaders', requestHeaders: [{ header: 'Cookie', operation: 'set', value: chzzkCookieStr }] },
+          condition: { urlFilter: 'https://chzzk.naver.com/*', resourceTypes: ['sub_frame'] }
         },
         {
-          id: API_RULE_ID,
+          id: CHZZK_API_RULE_ID,
           priority: 2,
-          action: {
-            type: 'modifyHeaders',
-            requestHeaders: [{ header: 'Cookie', operation: 'set', value: cookieStr }]
-          },
-          condition: {
-            urlFilter: 'https://api.chzzk.naver.com/*',
-            resourceTypes: ['xmlhttprequest', 'other']
-          }
+          action: { type: 'modifyHeaders', requestHeaders: [{ header: 'Cookie', operation: 'set', value: chzzkCookieStr }] },
+          condition: { urlFilter: 'https://api.chzzk.naver.com/*', resourceTypes: ['xmlhttprequest', 'other'] }
         }
-      ]
-    });
+      );
+    }
+
+    if (soopCookieMap.size > 0) {
+      const soopCookieStr = [...soopCookieMap.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+      rulesToAdd.push(
+        {
+          id: SOOP_IFRAME_RULE_ID,
+          priority: 2,
+          action: { type: 'modifyHeaders', requestHeaders: [{ header: 'Cookie', operation: 'set', value: soopCookieStr }] },
+          condition: { urlFilter: 'https://play.sooplive.com/*', resourceTypes: ['sub_frame'] }
+        }
+      );
+    }
+
+    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: rulesToRemove, addRules: rulesToAdd });
   } catch (e) {
     console.error('세션 쿠키 주입 실패:', e);
   }
@@ -86,57 +111,38 @@ async function injectSessionCookies() {
 
 // 팝업창 신호 수신 컨트롤러
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-  if (request.action === "fetchFollowingList") {
-    const chzzkApiUrl = 'https://api.chzzk.naver.com/service/v1/channels/followings?page=0&size=500&sortType=FOLLOW';
-    
-    // 네트워크 레벨 변조 규칙이 먹힌 상태에서 완전한 자격증명으로 원격 fetch 요청
-    fetch(chzzkApiUrl, {
-      method: 'GET',
+  if (request.action === 'checkSoopLogin') {
+    fetch('https://myapi.sooplive.com/api/favorite', {
       credentials: 'include',
       headers: { 'Accept': 'application/json' }
-    })
-    .then(async response => {
-      const status = response.status;
-      let data = null;
-      try { data = await response.json(); } catch (e) {}
-      if (!response.ok) {
-        sendResponse({ success: false, httpStatus: status, data });
-      } else {
-        sendResponse({ success: true, data });
-      }
-    })
-    .catch(error => {
-      console.error('Background Master Fetch Error:', error);
-      sendResponse({ success: false, error: error.toString() });
-    });
+    }).then(r => r.json())
+      .then(data => sendResponse({ loggedIn: Array.isArray(data?.data) }))
+      .catch(() => sendResponse({ loggedIn: false }));
+    return true;
+  }
+
+  if (request.action === "fetchFollowingList") {
+    const platform = getPlatform(request.platform);
+    platform.fetchFollowingList()
+      .then(result => sendResponse(result))
+      .catch(error => {
+        console.error('Background Following List Fetch Error:', error);
+        sendResponse({ success: false, error: error.toString() });
+      });
 
     return true; // 비동기 연결 보존
   }
 
   if (request.action === "fetchChannelLiveStatus") {
-    const chzzkApiUrl = `https://api.chzzk.naver.com/service/v1/channels/${request.channelId}`;
-
-    fetch(chzzkApiUrl, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { 'Accept': 'application/json' }
-    })
-    .then(async response => {
-      if (!response.ok) {
+    const platform = getPlatform(request.platform);
+    platform.fetchLiveStatus(request.channelId)
+      .then(({ openLive, channelImageUrl }) => {
+        sendResponse({ success: true, openLive, channelImageUrl });
+      })
+      .catch(error => {
+        console.error('Background Live Status Fetch Error:', error);
         sendResponse({ success: false, openLive: null, channelImageUrl: null });
-        return;
-      }
-      const data = await response.json();
-      sendResponse({
-        success: true,
-        openLive: data?.content?.openLive ?? null,
-        channelImageUrl: data?.content?.channelImageUrl ?? null
       });
-    })
-    .catch(error => {
-      console.error('Background Live Status Fetch Error:', error);
-      sendResponse({ success: false, openLive: null, channelImageUrl: null });
-    });
 
     return true; // 비동기 연결 보존
   }
