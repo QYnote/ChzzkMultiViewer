@@ -7,12 +7,16 @@
         "storage",
         "tabs",
         "declarativeNetRequest",
-        "cookies"
+        "cookies",
+        "scripting"
     ],
     "host_permissions": [
         "https://api.chzzk.naver.com/*",
         "https://chzzk.naver.com/*",
-        "https://*.naver.com/*"
+        "https://*.naver.com/*",
+        "https://*.sooplive.com/*",
+        "https://*.sooplive.co.kr/*",
+        "https://myapi.sooplive.com/*"
     ],
     "background": {
         "service_worker": "background.js"
@@ -32,6 +36,12 @@
     "content_scripts": [
         {
             "matches": ["https://chzzk.naver.com/live/*"],
+            "js": ["content.js"],
+            "run_at": "document_end",
+            "all_frames": true
+        },
+        {
+            "matches": ["https://play.sooplive.com/*"],
             "js": ["content.js"],
             "run_at": "document_end",
             "all_frames": true

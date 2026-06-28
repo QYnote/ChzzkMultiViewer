@@ -23,11 +23,12 @@ function swapWithMain(clickedTile, subStreamer) {
   clickedTile._iframe = oldMainIframe;
   clickedTile.dataset.channelId = prevMain.channelId;
   clickedTile.dataset.name = prevMain.name;
+  clickedTile.dataset.platform = prevMain.platform || 'chzzk';
   clickedTile.appendChild(createSubOverlay(prevMain.name, oldMainIframe, clickedTile));
 
   // 프로필 사진도 새로 차지한 채널(prevMain) 기준으로 갱신
   clickedTile.querySelector('.sub-profile-img')?.remove();
-  fetchChannelImage(prevMain.channelId, (imageUrl) => {
+  fetchChannelImage(prevMain.channelId, prevMain.platform || 'chzzk', (imageUrl) => {
     if (imageUrl) clickedTile.appendChild(createSubProfileImg(imageUrl, clickedTile));
   });
 

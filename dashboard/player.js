@@ -1,12 +1,13 @@
 // ── iframe 생성 ──
 function buildIframeSrc(iframe) {
   const muted = iframe.dataset.muted === '1';
-  return `https://chzzk.naver.com/live/${iframe.dataset.channelId}?${muted ? 'mute=1&' : ''}mv_ext=1`;
+  return getPlatform(iframe.dataset.platform).buildStreamUrl(iframe.dataset.channelId, muted);
 }
 
-function createIframe(channelId, muted) {
+function createIframe(channelId, platform, muted) {
   const iframe = document.createElement('iframe');
   iframe.dataset.channelId = channelId;
+  iframe.dataset.platform = platform || 'chzzk';
   iframe.dataset.muted = muted ? '1' : '0';
   iframe.src = buildIframeSrc(iframe);
   iframe.setAttribute('allowfullscreen', '');
@@ -23,16 +24,16 @@ function styleAsSub(iframe) {
 }
 
 // ── 생방송 여부 조회 ──
-function checkLiveStatus(channelId, callback) {
-  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId }, (response) => {
+function checkLiveStatus(channelId, platform, callback) {
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' }, (response) => {
     if (chrome.runtime.lastError || !response?.success) { callback(null); return; }
     callback(response.openLive);
   });
 }
 
 // ── 채널 프로필 사진 조회 (타일 생성 시 1회) ──
-function fetchChannelImage(channelId, callback) {
-  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId }, (response) => {
+function fetchChannelImage(channelId, platform, callback) {
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' }, (response) => {
     if (chrome.runtime.lastError || !response?.success) { callback(null); return; }
     callback(response.channelImageUrl);
   });
@@ -98,7 +99,7 @@ function createOfflineNotice() {
 }
 
 function updateOfflineNotice(container, channelId, iframe) {
-  checkLiveStatus(channelId, (openLive) => {
+  checkLiveStatus(channelId, iframe?.dataset.platform, (openLive) => {
     const isOffline = openLive === false;
     container._isOffline = isOffline;
     container.classList.toggle('is-offline', isOffline);
@@ -179,7 +180,7 @@ function setMainPlayer(streamer) {
     mainIframe.parentNode.removeChild(mainIframe);
   }
 
-  mainIframe = createIframe(streamer.channelId, false);
+  mainIframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', false);
   styleAsMain(mainIframe);
   colMain.insertBefore(mainIframe, mainEmptyNotice);
 
@@ -264,7 +265,8 @@ function createSubOverlay(name, iframe, tile) {
     tile.querySelector('.init-notice')?.remove();
     tile.querySelector('.manual-wide-notice')?.remove();
     tile.appendChild(createInitNotice());
-    iframe.src = `https://chzzk.naver.com/live/${tile.dataset.channelId}?mute=1&mv_ext=1`;
+    iframe.dataset.muted = '1';
+    iframe.src = buildIframeSrc(iframe);
     lastVol = 50;
     setMutedUI(true);
   });
@@ -279,8 +281,9 @@ function createSubTile(streamer) {
   tile.className = 'sub-tile';
   tile.dataset.channelId = streamer.channelId;
   tile.dataset.name = streamer.name;
+  tile.dataset.platform = streamer.platform || 'chzzk';
 
-  const iframe = createIframe(streamer.channelId, true);
+  const iframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', true);
   styleAsSub(iframe);
   tile._iframe = iframe;
   tile.appendChild(iframe);
@@ -314,14 +317,14 @@ function createSubTile(streamer) {
   tile.appendChild(createInitNotice());
   updateOfflineNotice(tile, streamer.channelId, iframe);
 
-  fetchChannelImage(streamer.channelId, (imageUrl) => {
+  fetchChannelImage(streamer.channelId, streamer.platform || 'chzzk', (imageUrl) => {
     if (imageUrl) tile.appendChild(createSubProfileImg(imageUrl, tile));
   });
 
   tile.addEventListener('click', (e) => {
     if (!e.target.closest('.sub-controls')) {
       if (colMain.querySelector('.init-notice') || tile.querySelector('.init-notice')) return;
-      swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name });
+      swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name, platform: tile.dataset.platform || 'chzzk' });
     }
   });
 

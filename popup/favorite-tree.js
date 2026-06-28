@@ -121,7 +121,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   row.draggable = true;
 
   row.addEventListener('dragstart', (e) => {
-    dragState = { type: 'item', channelId: item.channelId, name: item.name, sourceFolderId: folderId };
+    const inferredPlatform = item.platform || (/^[0-9a-f]{32}$/i.test(item.channelId) ? 'chzzk' : 'soop');
+    dragState = { type: 'item', channelId: item.channelId, name: item.name, platform: inferredPlatform, sourceFolderId: folderId };
     setTimeout(() => { row.style.opacity = '0.4'; }, 0);
     e.dataTransfer.effectAllowed = 'move';
     e.stopPropagation();
@@ -170,7 +171,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const liveBadge = document.createElement('span');
   liveBadge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
   liveBadge.textContent = 'OFF';
-  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: item.channelId }, (response) => {
+  const itemPlatform = item.platform || (/^[0-9a-f]{32}$/i.test(item.channelId) ? 'chzzk' : 'soop');
+  chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: item.channelId, platform: itemPlatform }, (response) => {
     if (!response?.success || response.openLive == null) return;
     liveBadge.style.visibility = 'visible';
     if (response.openLive) {
@@ -288,7 +290,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         const target = findFolderNode(tree, folder.id);
         if (!target) return;
         if (!target.items) target.items = [];
-        target.items.push({ channelId: dragState.channelId, name: dragState.name });
+        target.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
         dragState = null;
         saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
 
@@ -415,7 +417,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!dragState || dragState.type !== 'item' || dragState.sourceFolderId === 'root') return;
       removeItemFromTree(tree, dragState.channelId);
       if (!tree.items) tree.items = [];
-      tree.items.push({ channelId: dragState.channelId, name: dragState.name });
+      tree.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
       dragState = null;
       saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
     });

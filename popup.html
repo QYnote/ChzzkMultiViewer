@@ -214,8 +214,15 @@
     <!-- 수동 등록 파트 -->
     <div style="border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 15px;">
       <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">📌 수동 ID 입력 등록</h3>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:11px; font-weight:bold; flex-shrink:0;">플랫폼</span>
+          <label style="font-weight:normal; cursor:pointer; font-size:11px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; margin:0;"><input type="radio" name="platform-select" value="chzzk" checked> 치지직</label>
+          <label style="font-weight:normal; cursor:pointer; font-size:11px; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; margin:0;"><input type="radio" name="platform-select" value="soop"> SOOP</label>
+        </div>
+      </div>
       <div class="input-group">
-        <label>치지직 채널 고유 ID (32자리 난수)</label>
+        <label id="label-channel-id">채널 고유 ID (32자리 난수)</label>
         <input type="text" id="input-channel-id" placeholder="예: 2b3c4d... 주소창에서 복사">
       </div>
       <div class="input-group">
@@ -225,8 +232,8 @@
       <button id="btn-add-manual">현재 시청 목록에 추가</button>
     </div>
 
-    <!-- 팔로잉 연동 파트 -->
-    <div>
+    <!-- 치지직 팔로잉 연동 파트 -->
+    <div id="chzzk-following-section" style="border-bottom: 1px dashed #ccc; padding-bottom: 15px; margin-bottom: 15px;">
       <h3 style="font-size:12px; margin: 0 0 10px 0; color:#00c73c;">🤝 치지직 팔로잉 연동</h3>
       <button id="btn-load-following" class="btn-secondary" style="margin-top:0;">내 팔로잉 목록 가져오기</button>
       <div id="login-required-guide" style="display:none; text-align:center; padding:16px; font-size:12px; color:#555;">
@@ -235,6 +242,19 @@
       </div>
       <div id="following-sync-container" style="margin-top:10px; display:none;">
         <div class="list-container" id="following-api-list" style="height:220px;"></div>
+      </div>
+    </div>
+
+    <!-- SOOP 팔로잉 연동 파트 -->
+    <div id="soop-following-section" style="display:none;">
+      <h3 style="font-size:12px; margin: 0 0 10px 0; color:#005fcc;">🤝 SOOP 팔로잉 연동</h3>
+      <button id="btn-load-soop-following" class="btn-secondary" style="margin-top:0; background-color:#005fcc;">내 SOOP 팔로잉 목록 가져오기</button>
+      <div id="soop-login-required-guide" style="display:none; text-align:center; padding:16px; font-size:12px; color:#555;">
+        <p style="margin-bottom:8px;">SOOP 로그인이 필요합니다.</p>
+        <a id="link-go-soop-login" href="#" style="color:#005fcc; text-decoration:underline; font-weight:bold;">SOOP 로그인하기</a>
+      </div>
+      <div id="soop-following-sync-container" style="margin-top:10px; display:none;">
+        <div class="list-container" id="soop-following-api-list" style="height:220px;"></div>
       </div>
     </div>
   </div>
