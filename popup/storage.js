@@ -81,7 +81,7 @@ function addToFavorite(streamer) {
   getFavoriteTree((tree) => {
     const allIds = collectAllChannelIds(tree);
     if (allIds.has(streamer.channelId)) return;
-    tree.items.push({ channelId: streamer.channelId, name: streamer.name });
+    tree.items.push({ channelId: streamer.channelId, name: streamer.name, platform: streamer.platform || 'chzzk' });
     saveFavoriteTree(tree, () => {
       showToast(`${streamer.name}을(를) 즐겨찾기에 추가했습니다.`, 'success');
       loadAndRenderData();
@@ -97,7 +97,7 @@ function copyToCurrentView(streamer) {
       showToast('이미 현재 시청 목록에 올라와 있습니다.', 'error');
       return;
     }
-    currentList.push({ channelId: streamer.channelId, name: streamer.name });
+    currentList.push({ channelId: streamer.channelId, name: streamer.name, platform: streamer.platform || 'chzzk' });
     chrome.storage.local.set({ currentViewList: currentList }, () => {
       loadAndRenderData();
       showToast('시청 목록으로 안전하게 복사되었습니다.', 'success');

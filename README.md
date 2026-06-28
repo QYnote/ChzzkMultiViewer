@@ -11,8 +11,9 @@
 > 📄 각 기능의 자세한 설명은 [상세 기능 정의](./resources/기능정의.md) 문서를 참고하세요.
 
 ### 팝업
-- **팔로잉 목록 연동** — 내 팔로잉 목록을 불러와 LIVE 방송 우선 정렬 후 시청/즐겨찾기 추가
-- **즐겨찾기 보관함** — 자주 보는 스트리머 영구 저장, 폴더(트리) 구조 관리, LIVE 여부 표시, 시청 목록 간 상호 복사
+- **플랫폼 선택** — 스트리머 추가 시 치지직 / SOOP 중 플랫폼 선택
+- **팔로잉 목록 연동** — 치지직·SOOP 각각 내 팔로잉 목록을 불러와 LIVE 방송 우선 정렬 후 시청/즐겨찾기 추가
+- **즐겨찾기 보관함** — 자주 보는 스트리머 영구 저장, 폴더(트리) 구조 관리, LIVE 여부 표시, 시청 목록 간 상호 복사 (치지직·SOOP 혼합 보관 가능)
 - **레이아웃 선택** — 기본형(서브 좌) / 반전형(서브 우) / 서브하단 / 서브상단 4종 중 선택
 
 ### 대시보드 공통
@@ -25,7 +26,7 @@
 - **자동 동기화** — 메인/서브 화면 각각에 개별 적용, 딜레이가 기준치(초) 초과 시 자동 새로고침 / 신호 없으면 약 10초 후 자동 재시도
 
 ### 대시보드 메인 채널
-- **채팅 연동** — 현재 메인 스트리머의 채팅창 자동 표시 (숨김 상태 저장)
+- **채팅 연동** — 치지직 메인 스트리머의 채팅창 자동 표시 (숨김 상태 저장) / SOOP은 채팅 미지원으로 채팅 영역 자동 숨김
 - **채팅 자동 접기** — 대시보드 내 iframe 채팅 패널 자동 숨김
 
 ### 대시보드 서브 채널
@@ -92,7 +93,12 @@ Chrome 웹스토어 출시 전 직접 설치 방법입니다.
 source/
 ├── manifest.json          권한 선언, content_scripts 등록
 ├── background.js          Service Worker — 쿠키 주입 규칙, 팔로잉 API fetch 대리
-├── content.js             chzzk 스트림 페이지 주입 스크립트 (볼륨 제어, 와이드 모드)
+├── content.js             스트림 페이지 주입 스크립트 (볼륨 제어, 와이드 모드, SOOP 팝업 닫기)
+├── content-soop-main.js   SOOP 스트림 페이지 MAIN 월드 스크립트 (로컬 앱 연결 요청 차단)
+├── platforms/
+│   ├── chzzk.js           치지직 플랫폼 어댑터 (라이브 상태, 프로필, 팔로잉, 채팅 URL)
+│   ├── soop.js            SOOP 플랫폼 어댑터 (라이브 상태, 프로필, 팔로잉)
+│   └── index.js           플랫폼 어댑터 진입점 (getPlatform 함수)
 ├── popup.html             팝업 관리자 UI (4탭)
 ├── popup/
 │   ├── main.js            DOM 초기화, 탭 이벤트, 버튼 이벤트
@@ -129,20 +135,52 @@ source/
 
 ## 업데이트 예정 기능
 
+- [ ] 광고 재생 중 자동 동기화가 새로고침을 실행하는 문제 수정 (치지직·SOOP 공통)
 - [ ] 팝업에서 즐겨찾기 목록을 시청 목록 하단에 위치하도록 UI 변경
-- [ ] 아프리카TV(SOOP) 채널 멀티뷰 지원 추가
-  - **사전 조사 필요 (SOOP 페이지에서 직접 확인)**
-  - [ ] 스트리밍 iframe URL 형식 (예: `play.sooplive.co.kr/채널ID/...` 등)
-  - [ ] iframe 임베드 허용 여부 (다른 페이지에서 SOOP 플레이어를 iframe으로 삽입할 수 있는지)
-  - [ ] 채팅창 URL 형식
-  - [ ] 방송 중 여부 확인 API 엔드포인트 및 응답 구조
-  - [ ] 채널 프로필 사진 URL 획득 방법 (같은 API 응답에 포함되는지 여부)
-  - [ ] 팔로잉 목록 API 엔드포인트 및 응답 구조
-  - [ ] 로그인 상태 확인 방법 (어떤 쿠키로 로그인 여부 판별하는지)
-  - [ ] 쿠키 인증 도메인 (API 요청 시 어느 도메인 쿠키가 필요한지)
-  - [ ] 채널 ID 형식 (자릿수, 문자 구성)
-  - [ ] 와이드(전체화면) 모드 버튼의 HTML 셀렉터 (개발자 도구로 확인)
-  - [ ] 와이드 모드 활성 상태를 구분할 수 있는 CSS 클래스 또는 속성
+- [x] 아프리카TV(SOOP) 채널 멀티뷰 지원 추가
+  - [x] 스트리밍 iframe URL 형식
+    - 방송 페이지 URL: `https://play.sooplive.com/{스트리머ID}?mv_ext=1`
+    - 치지직과 동일하게 이 URL을 iframe에 직접 삽입하는 방식으로 동작 확인
+    - SOOP 고화질 플레이어가 로컬 앱 감지를 위해 127.0.0.1에 연결을 시도하는데, 확장프로그램에서 이 요청을 사전 차단하여 브라우저 권한 팝업이 뜨지 않도록 처리함. 단, SOOP 자체 고화질 플레이어 기능(별도 앱 설치 방식)은 대신 HLS 방식으로 자동 대체됨.
+    - 연결 차단으로 인해 SOOP 플레이어가 "고화질 스트리머 연결이 차단되었습니다" 안내 팝업을 표시하는데, 확장프로그램에서 자동으로 닫기 버튼을 클릭하여 처리함.
+  - [x] 방송 중 여부 확인 API 엔드포인트 및 응답 구조
+    - 엔드포인트: `POST https://live.sooplive.com/afreeca/player_live_api.php?bjid={채널ID}`
+    - POST body (form-urlencoded): `bid={채널ID}&bno=&type=live&pwd=&player_type=html5&stream_type=common&quality=HD&mode=landing&from_api=0&is_revive=false`
+    - 방송 중: 응답의 `CHANNEL.RESULT === 1` 이고 `CHANNEL.BSTATUS === "BROADING"`
+    - 방송 종료: `CHANNEL.RESULT === 0`
+    - 요청 시 `Origin: https://play.sooplive.com` 헤더 필요 (CORS)
+  - [x] 채널 프로필 사진 URL 획득 방법 (같은 API 응답에 포함되는지 여부)
+    - 고정 URL 패턴으로 생성 가능 (API 호출 불필요)
+    - `https://stimg.sooplive.com/LOGO/{채널ID 앞 2글자}/{채널ID}/m/{채널ID}.webp`
+    - 예: `inehine` → `https://stimg.sooplive.com/LOGO/in/inehine/m/inehine.webp`
+  - [x] 팔로잉 목록 API 엔드포인트 및 응답 구조
+    - `preferbjOnLnbController.php` 는 SOOP 추천 목록이므로 사용 불가
+    - 엔드포인트: `GET https://myapi.sooplive.com/api/favorite`
+    - Origin: `https://www.sooplive.com` (CORS)
+    - 응답 구조: `data[]` 배열
+    - 항목별 필드: `user_id`(채널ID), `user_nick`(닉네임), `is_live`(방송 중 여부)
+    - 방송 중: `is_live: true`이고 `broad_info[]`에 방송 상세 정보 포함 (`broad_no`, `broad_start`, `broad_title` 등)
+    - 방송 종료: `is_live: false`이고 `broad_info: []` (빈 배열)
+  - [x] 로그인 상태 확인 방법 (어떤 쿠키로 로그인 여부 판별하는지)
+    - `.sooplive.co.kr` 도메인의 `isBbs=1` 쿠키 존재 여부로 로그인 판별
+    - `BbsTicket` 쿠키에 유저 ID가 담겨 있음 (로그인 시 생성)
+  - [x] 쿠키 인증 도메인 (API 요청 시 어느 도메인 쿠키가 필요한지)
+    - 인증 쿠키 도메인: `.sooplive.co.kr`
+  - [x] 채널 ID 형식 (자릿수, 문자 구성)
+    - 문자열 형식 (예: `madaomm`, `inehine`) — 치지직 32자리 hex와 다름
+  - [x] 와이드(전체화면) 모드 버튼의 HTML 셀렉터 (개발자 도구로 확인)
+    - 셀렉터: `.btn_screen_mode`
+  - [x] 와이드 모드 활성 상태를 구분할 수 있는 CSS 클래스 또는 속성
+    - `body` 태그에 `screen_mode` 클래스 존재 여부로 판별
+    - 일반 상태: `class="ratio169_mode"` / 와이드 상태: `class="ratio169_mode screen_mode"`
+
+### 배포 전 필수 완료 항목 (v2.0.0)
+
+> 아래 항목이 모두 완료되기 전에는 배포하지 않는다.
+
+- [ ] 버전을 2.0.0으로 변경
+- [ ] 치지직 확장 아이콘 이미지 교체
+- [ ] SOOP 확장 아이콘 이미지 교체
 
 ### 개발 제외 항목
 
