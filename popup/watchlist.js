@@ -32,14 +32,18 @@ function renderStreamerList(container, list, type, currentList, favoriteList) {
 
     const textSpan = document.createElement('span');
     textSpan.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden;';
+
+    const iconEl = document.createElement('img');
+    iconEl.className = 'platform-icon';
+    iconEl.src = (streamer.platform === 'soop')
+      ? 'resources/soop_icon_16.jpg'
+      : 'resources/chzzk_icon_16.jpg';
+    iconEl.alt = '';
+    textSpan.appendChild(iconEl);
+
     const nameStrong = document.createElement('strong');
     nameStrong.textContent = streamer.name;
-    const idSpan = document.createElement('span');
-    idSpan.style.cssText = 'color:#999; font-size:10px;';
-    idSpan.textContent = `(${streamer.channelId.substring(0, 6)}...)`;
     textSpan.appendChild(nameStrong);
-    textSpan.appendChild(document.createTextNode(' '));
-    textSpan.appendChild(idSpan);
 
     if (type === 'favorite') {
       const liveBadge = document.createElement('span');
