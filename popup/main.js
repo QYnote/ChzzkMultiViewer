@@ -7,11 +7,17 @@ var favoriteMasterListDiv  = document.getElementById('favorite-master-list');
 var inputChannelId         = document.getElementById('input-channel-id');
 var inputStreamerName       = document.getElementById('input-streamer-name');
 var btnAddManual           = document.getElementById('btn-add-manual');
-var btnLoadFollowing       = document.getElementById('btn-load-following');
-var loginRequiredGuide     = document.getElementById('login-required-guide');
-var linkGoLogin            = document.getElementById('link-go-login');
-var followingSyncContainer = document.getElementById('following-sync-container');
-var followingApiListDiv    = document.getElementById('following-api-list');
+var btnLoadFollowing           = document.getElementById('btn-load-following');
+var loginRequiredGuide         = document.getElementById('login-required-guide');
+var linkGoLogin                = document.getElementById('link-go-login');
+var followingSyncContainer     = document.getElementById('following-sync-container');
+var followingApiListDiv        = document.getElementById('following-api-list');
+var btnLoadSoopFollowing       = document.getElementById('btn-load-soop-following');
+var soopLoginRequiredGuide     = document.getElementById('soop-login-required-guide');
+var linkGoSoopLogin            = document.getElementById('link-go-soop-login');
+var soopFollowingSyncContainer = document.getElementById('soop-following-sync-container');
+var soopFollowingApiListDiv    = document.getElementById('soop-following-api-list');
+var labelChannelId             = document.getElementById('label-channel-id');
 var chkAutoSync            = document.getElementById('chk-auto-sync');
 var numLimitSeconds        = document.getElementById('num-limit-seconds');
 var selProfileDisplay      = document.getElementById('sel-profile-display');
@@ -51,6 +57,7 @@ function initTabEvent() {
 function initButtonEvents() {
   initWatchlistEvents();
   initFollowingEvents();
+  initSoopFollowingEvents();
   initSettingsEvents();
 
   if (btnOpenDashboard) {

@@ -72,15 +72,24 @@
     document.querySelectorAll('video').forEach(v => applyVolume(v, vol));
   });
 
+  // ── 플랫폼 감지 ──
+  const isSoop = window.location.hostname === 'play.sooplive.com';
+
   // ── 넓은 화면 전환 ──
   let wideModeTriggered = false;
 
   function isWideMode() {
+    if (isSoop) return document.body.classList.contains('screen_mode');
     const layout = document.querySelector('#live_player_layout');
     return !!layout && layout.classList.contains('is_large');
   }
 
-  function pressT() {
+  function pressWide() {
+    if (isSoop) {
+      const btn = document.querySelector('.btn_screen_mode');
+      if (btn) btn.click();
+      return;
+    }
     const wideBtn = document.querySelector('[aria-label="넓은 화면"]');
     if (wideBtn) {
       wideBtn.click();
@@ -114,7 +123,7 @@
         window.parent.postMessage({ type: 'chzzk-mv-wide-done', success: true }, '*');
         return;
       }
-      pressT();
+      pressWide();
       if (++attempts >= 60) {
         clearInterval(wideModeTimer);
         wideModeTimer = null;
@@ -156,10 +165,31 @@
     btn.click();
   }
 
+  // ── SOOP 고화질 스트리머 연결 안내 팝업 자동 닫기 ──
+  function dismissSoopAgentPopup() {
+    if (!isSoop) return;
+    const btn = document.querySelector('.no_agent_install');
+    if (btn) btn.click();
+  }
+
+  // ── SOOP 채팅 영역 자동 닫기 ──
+  function collapseSoopChat() {
+    if (!isSoop) return;
+    const area = document.querySelector('#chatting_area');
+    if (!area || area.style.display === 'none') return;
+    const btn = document.querySelector('#setbox_close a');
+    if (!btn) return;
+    // href="javascript:;" 클릭 시 CSP 위반 에러 방지: 클릭 전 href 제거
+    btn.removeAttribute('href');
+    btn.click();
+  }
+
   // ── 통합 실행 ──
   function run() {
     document.querySelectorAll('video').forEach(handleVideo);
     collapseChat();
+    dismissSoopAgentPopup();
+    collapseSoopChat();
   }
 
   function init() {
