@@ -35,11 +35,13 @@ function showToast(message, type) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabEvent();
+  initWatchSubtabEvents();
+  initPlatformTabEvents();
   loadAndRenderData();
   initButtonEvents();
 });
 
-// ── 탭 전환 ──
+// ── 메인 탭 전환 ──
 function initTabEvent() {
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -49,6 +51,35 @@ function initTabEvent() {
       button.classList.add('active');
       const targetContent = document.getElementById(targetTabId);
       if (targetContent) targetContent.classList.add('active');
+    });
+  });
+}
+
+// ── 시청목록 서브탭 전환 ──
+function initWatchSubtabEvents() {
+  document.querySelectorAll('.watch-subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.watch-subtab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.watch-subtab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById(btn.getAttribute('data-subtab'));
+      if (target) target.classList.add('active');
+    });
+  });
+}
+
+// ── 플랫폼 서브탭 (치지직/SOOP) ──
+function initPlatformTabEvents() {
+  document.querySelectorAll('.platform-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.platform-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // 숨김 라디오를 체크하여 watchlist.js의 change 핸들러가 레이블·섹션 전환을 처리하도록 위임
+      const radio = document.querySelector(`input[name="platform-select"][value="${btn.dataset.platform}"]`);
+      if (radio) {
+        radio.checked = true;
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
+      }
     });
   });
 }

@@ -76,8 +76,8 @@ function renderSoopFollowingList(streamerList) {
           badge.style.cssText += 'background:#e1e4e6; color:#767c82;';
         }
 
-        leftGroup.appendChild(nameSpan);
         leftGroup.appendChild(badge);
+        leftGroup.appendChild(nameSpan);
         row.appendChild(leftGroup);
 
         const rightGroup = document.createElement('div');
@@ -85,7 +85,7 @@ function renderSoopFollowingList(streamerList) {
 
         const btnFav = document.createElement('button');
         btnFav.textContent = inFavorite ? '★ 즐겨찾기' : '☆ 즐겨찾기';
-        setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#6c757d');
+        setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#bbb');
         btnFav.disabled = inFavorite;
         btnFav.addEventListener('click', () => {
           getFavoriteTree((t) => {
@@ -103,7 +103,7 @@ function renderSoopFollowingList(streamerList) {
 
         const btnAdd = document.createElement('button');
         btnAdd.textContent = inCurrent ? '추가됨' : '+ 시청';
-        setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#005fcc');
+        setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#3B9ED6');
         btnAdd.disabled = inCurrent;
         btnAdd.addEventListener('click', () => {
           chrome.storage.local.get(['currentViewList'], (res) => {
@@ -234,7 +234,7 @@ function showErrorUI(debugInfo) {
       <p style="color:#dc3545; font-weight:bold; margin-bottom:6px;">불러오기 실패</p>
       <p style="color:#999; font-size:11px; margin-bottom:8px;">자동로그인 세션이 만료되었거나 비로그인 상태입니다.</p>
       ${debugInfo ? `<p style="color:#bbb; font-size:10px; word-break:break-all; margin-bottom:8px; text-align:left; background:#f5f5f5; padding:6px; border-radius:3px;">${debugInfo}</p>` : ''}
-      <a href="https://chzzk.naver.com" target="_blank" style="color:#00c73c; text-decoration:underline; font-weight:bold;">치지직 홈 열기</a>
+      <a href="https://chzzk.naver.com" target="_blank" style="color:#3B9ED6; text-decoration:underline; font-weight:bold;">치지직 홈 열기</a>
     </div>
   `;
 }
@@ -299,8 +299,8 @@ function renderFollowingApiList(followList) {
           badge.style.cssText += 'background:#e1e4e6; color:#767c82;';
         }
 
-        leftGroup.appendChild(nameSpan);
         leftGroup.appendChild(badge);
+        leftGroup.appendChild(nameSpan);
         row.appendChild(leftGroup);
 
         const rightGroup = document.createElement('div');
@@ -308,7 +308,7 @@ function renderFollowingApiList(followList) {
 
         const btnFav = document.createElement('button');
         btnFav.textContent = inFavorite ? '★ 즐겨찾기' : '☆ 즐겨찾기';
-        setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#6c757d');
+        setMiniButtonStyle(btnFav, inFavorite ? '#e6a817' : '#bbb');
         btnFav.disabled = inFavorite;
         btnFav.addEventListener('click', () => {
           getFavoriteTree((t) => {
@@ -326,7 +326,7 @@ function renderFollowingApiList(followList) {
 
         const btnAdd = document.createElement('button');
         btnAdd.textContent = inCurrent ? '추가됨' : '+ 시청';
-        setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#00c73c');
+        setMiniButtonStyle(btnAdd, inCurrent ? '#bbb' : '#3B9ED6');
         btnAdd.disabled = inCurrent;
         btnAdd.addEventListener('click', () => {
           chrome.storage.local.get(['currentViewList'], (res) => {

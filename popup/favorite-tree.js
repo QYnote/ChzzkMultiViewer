@@ -70,8 +70,8 @@ function getDropPos(e, el) {
 
 // ── 삽입 인디케이터 스타일 ──
 function setInsertLine(el, pos) {
-  el.style.borderTop    = pos === 'before' ? '2px solid #00c73c' : '';
-  el.style.borderBottom = pos === 'after'  ? '2px solid #00c73c' : '';
+  el.style.borderTop    = pos === 'before' ? '2px solid #3B9ED6' : '';
+  el.style.borderBottom = pos === 'after'  ? '2px solid #3B9ED6' : '';
 }
 function clearInsertLine(el) {
   el.style.borderTop = '';
@@ -164,6 +164,14 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const left = document.createElement('div');
   left.style.cssText = 'display:flex; align-items:center; gap:4px; flex:1; min-width:0; overflow:hidden;';
 
+  const iconEl = document.createElement('img');
+  iconEl.className = 'platform-icon';
+  iconEl.src = (item.platform === 'soop')
+    ? 'resources/soop_icon_16.jpg'
+    : 'resources/chzzk_icon_16.jpg';
+  iconEl.alt = '';
+  left.appendChild(iconEl);
+
   const nameEl = document.createElement('strong');
   nameEl.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
   nameEl.textContent = item.name;
@@ -186,8 +194,8 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
     }
   });
 
-  left.appendChild(nameEl);
   left.appendChild(liveBadge);
+  left.appendChild(nameEl);
 
   const btnGroup = document.createElement('div');
   btnGroup.style.cssText = 'display:flex; gap:2px; flex-shrink:0;';
@@ -195,7 +203,7 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   const inCurrent = (currentList || []).some(s => s.channelId === item.channelId);
   const btnCopy = document.createElement('button');
   btnCopy.textContent = inCurrent ? '추가됨' : '+ 시청';
-  setMiniButtonStyle(btnCopy, inCurrent ? '#bbb' : '#00c73c');
+  setMiniButtonStyle(btnCopy, inCurrent ? '#bbb' : '#3B9ED6');
   btnCopy.disabled = inCurrent;
   btnCopy.style.padding = '2px 6px';
   if (!inCurrent) {
@@ -257,8 +265,8 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         // 항목 → 이 폴더로 이동
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        header.style.background = '#e0f5e8';
-        header.style.outline = '1px dashed #00c73c';
+        header.style.background = '#EAF5FD';
+        header.style.outline = '1px dashed #3B9ED6';
         clearInsertLine(header);
       } else if (dragState.type === 'folder' && dragState.folderId !== folder.id) {
         // 폴더 → 같은 레벨 재정렬
@@ -363,7 +371,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
 
     const btnDel = document.createElement('button');
     btnDel.textContent = '삭제';
-    setMiniButtonStyle(btnDel, '#6c757d');
+    setMiniButtonStyle(btnDel, '#5A8FAA');
     btnDel.style.padding = '1px 5px';
     btnDel.style.fontSize = '10px';
     btnDel.style.marginLeft = '2px';
@@ -403,8 +411,8 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!dragState || dragState.type !== 'item' || dragState.sourceFolderId === 'root') return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      addRow.style.background = '#e0f5e8';
-      addRow.style.outline = '1px dashed #00c73c';
+      addRow.style.background = '#EAF5FD';
+      addRow.style.outline = '1px dashed #3B9ED6';
     });
     addRow.addEventListener('dragleave', () => {
       addRow.style.background = '';
