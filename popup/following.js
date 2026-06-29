@@ -1,11 +1,10 @@
 // ── 치지직 로그인 상태 확인 및 UI 표시 ──
 function checkLoginStatus() {
   Promise.all([
-    chrome.cookies.getAll({ url: 'https://naver.com/' }),
-    chrome.cookies.getAll({ url: 'https://chzzk.naver.com/' })
-  ]).then(([naverCookies, chzzkCookies]) => {
-    const allCookies = naverCookies.concat(chzzkCookies);
-    const isLoggedIn = allCookies.some(c => c.name === 'NID_AUT') && allCookies.some(c => c.name === 'NID_SES');
+    chrome.cookies.get({ url: 'https://chzzk.naver.com/', name: 'NID_AUT' }),
+    chrome.cookies.get({ url: 'https://chzzk.naver.com/', name: 'NID_SES' })
+  ]).then(([nidAut, nidSes]) => {
+    const isLoggedIn = !!nidAut && !!nidSes;
     if (btnLoadFollowing) btnLoadFollowing.style.display = isLoggedIn ? '' : 'none';
     if (loginRequiredGuide) loginRequiredGuide.style.display = isLoggedIn ? 'none' : 'block';
   });

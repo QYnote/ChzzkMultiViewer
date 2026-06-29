@@ -53,17 +53,16 @@ async function injectSessionCookies() {
   const SOOP_API_RULE_ID     = 2006; // live.sooplive.com fetch 쿠키 주입
 
   try {
-    const [chzzkCookies, naverCookies, soopComCookies, soopCoKrCookies] = await Promise.all([
-      chrome.cookies.getAll({ url: 'https://chzzk.naver.com/' }),
-      chrome.cookies.getAll({ url: 'https://naver.com/' }),
+    const CHZZK_AUTH_COOKIE_NAMES = ['NID_AUT', 'NID_SES', 'nid_inf'];
+    const [chzzkAuthResults, soopComCookies, soopCoKrCookies] = await Promise.all([
+      Promise.all(CHZZK_AUTH_COOKIE_NAMES.map(name => chrome.cookies.get({ url: 'https://chzzk.naver.com/', name }))),
       chrome.cookies.getAll({ url: 'https://www.sooplive.com/' }),
       chrome.cookies.getAll({ url: 'https://www.sooplive.co.kr/' })
     ]);
 
-    // 치지직: 이름 기준 중복 제거 (chzzk 쿠키 우선)
+    // 치지직: 인증 쿠키 3개만 핀포인트 수집
     const chzzkCookieMap = new Map();
-    naverCookies.forEach(c => chzzkCookieMap.set(c.name, c.value));
-    chzzkCookies.forEach(c => chzzkCookieMap.set(c.name, c.value));
+    chzzkAuthResults.filter(Boolean).forEach(c => chzzkCookieMap.set(c.name, c.value));
 
     // SOOP: 이름 기준 중복 제거 (.com 쿠키 우선)
     const soopCookieMap = new Map();
