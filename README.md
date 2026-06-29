@@ -140,6 +140,7 @@ source/
 
 - [x] 광고 재생 중 자동 동기화가 새로고침을 실행하는 문제 수정 (치지직·SOOP 공통)
 - [x] 치지직 API 추출 방식 재구성 — Element 의존 방식 제거, Source/Network/Application Cookie 기반으로 전환
+- [ ] 트위치(Twitch) 플랫폼 채널 멀티뷰 지원 추가
 
 ### 개발 제외 항목
 

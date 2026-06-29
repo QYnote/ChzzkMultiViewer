@@ -100,7 +100,6 @@
     if (wideModeTriggered) return;
     wideModeTriggered = true;
 
-    // 1초마다 와이드 모드 여부 확인 후 T 키 (최대 1분)
     // 즉시 판단하지 않음 — 새로고침 직후 렌더링 지연 대응
     let attempts = 0;
     wideModeTimer = setInterval(() => {
