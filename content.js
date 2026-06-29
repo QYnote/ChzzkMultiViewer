@@ -184,12 +184,46 @@
     btn.click();
   }
 
+  // ── 광고 감지 + 스킵 ──
+  let lastAdState = null;
+  let adSkipAttempted = false;
+
+  function reportAdState() {
+    const isAd = isSoop
+      ? !!document.getElementById('da_btn_skip')
+      : !!document.querySelector('[data-role="skipInfo"]');
+    if (isAd !== lastAdState) {
+      lastAdState = isAd;
+      if (!isAd) adSkipAttempted = false;
+      try { window.parent.postMessage({ type: 'chzzk-mv-ad', isAd }, '*'); } catch (e) {}
+    }
+  }
+
+  function skipAdIfPossible() {
+    if (adSkipAttempted) return;
+    if (isSoop) {
+      const btn = document.querySelector('#da_btn_skip.skip_on');
+      if (btn && btn.style.display !== 'none') {
+        adSkipAttempted = true;
+        btn.click();
+      }
+    } else {
+      const btn = document.querySelector('[data-role="skipBtn"]:not(.hide)');
+      if (btn) {
+        adSkipAttempted = true;
+        btn.click();
+      }
+    }
+  }
+
   // ── 통합 실행 ──
   function run() {
     document.querySelectorAll('video').forEach(handleVideo);
     collapseChat();
     dismissSoopAgentPopup();
     collapseSoopChat();
+    reportAdState();
+    skipAdIfPossible();
   }
 
   function init() {
@@ -199,6 +233,8 @@
     const observer = new MutationObserver(run);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     setTimeout(() => observer.disconnect(), 15000);
+
+    setInterval(skipAdIfPossible, 500);
   }
 
   if (document.readyState === 'loading') {
