@@ -60,6 +60,16 @@ window.addEventListener('message', (e) => {
     }
     return;
   }
+  if (e.data?.type === 'chzzk-mv-ad') {
+    if (e.source === mainIframe?.contentWindow) {
+      mainIframe._isAd = e.data.isAd;
+    } else {
+      document.querySelectorAll('.sub-tile').forEach(tile => {
+        if (e.source === tile._iframe?.contentWindow) tile._iframe._isAd = e.data.isAd;
+      });
+    }
+    return;
+  }
   if (e.data?.type === 'chzzk-mv-latency') {
     const sec = e.data.v;
     const text = `딜레이 ${sec.toFixed(1)}s`;
@@ -67,7 +77,7 @@ window.addEventListener('message', (e) => {
       if (mainLatencyEl) mainLatencyEl.textContent = text;
       lastLatencyTime = Date.now();
       const now = Date.now();
-      if (!colMain._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+      if (!colMain._isOffline && !mainIframe._isAd && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
           && now - mainLastSyncTime > SYNC_COOLDOWN) {
         mainIframe.src = mainIframe.src;
         lastLatencyTime = now;
@@ -80,7 +90,7 @@ window.addEventListener('message', (e) => {
           if (label) label.textContent = text;
           tile._lastLatencyTime = Date.now();
           const now = Date.now();
-          if (!tile._isOffline && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
+          if (!tile._isOffline && !tile._iframe._isAd && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
               && tile._iframe.src
               && (!tile._lastSyncTime || now - tile._lastSyncTime > SYNC_COOLDOWN)) {
             tile._iframe.src = tile._iframe.src;
