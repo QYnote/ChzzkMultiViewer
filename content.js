@@ -91,20 +91,7 @@
       return;
     }
     const wideBtn = document.querySelector('[aria-label="넓은 화면"]');
-    if (wideBtn) {
-      wideBtn.click();
-      return;
-    }
-    const video = document.querySelector('video');
-    const target = (video && video.closest('[tabindex]')) || document.body;
-    try { window.focus(); } catch (e) {}
-    target.focus();
-    ['keydown', 'keyup'].forEach(type => {
-      target.dispatchEvent(new KeyboardEvent(type, {
-        key: 't', code: 'KeyT', keyCode: 84, which: 84,
-        bubbles: true, cancelable: true,
-      }));
-    });
+    if (wideBtn) wideBtn.click();
   }
 
   let wideModeTimer = null;
