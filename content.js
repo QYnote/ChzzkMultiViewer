@@ -91,20 +91,7 @@
       return;
     }
     const wideBtn = document.querySelector('[aria-label="넓은 화면"]');
-    if (wideBtn) {
-      wideBtn.click();
-      return;
-    }
-    const video = document.querySelector('video');
-    const target = (video && video.closest('[tabindex]')) || document.body;
-    try { window.focus(); } catch (e) {}
-    target.focus();
-    ['keydown', 'keyup'].forEach(type => {
-      target.dispatchEvent(new KeyboardEvent(type, {
-        key: 't', code: 'KeyT', keyCode: 84, which: 84,
-        bubbles: true, cancelable: true,
-      }));
-    });
+    if (wideBtn) wideBtn.click();
   }
 
   let wideModeTimer = null;
@@ -113,7 +100,6 @@
     if (wideModeTriggered) return;
     wideModeTriggered = true;
 
-    // 1초마다 와이드 모드 여부 확인 후 T 키 (최대 1분)
     // 즉시 판단하지 않음 — 새로고침 직후 렌더링 지연 대응
     let attempts = 0;
     wideModeTimer = setInterval(() => {
@@ -184,12 +170,46 @@
     btn.click();
   }
 
+  // ── 광고 감지 + 스킵 ──
+  let lastAdState = null;
+  let adSkipAttempted = false;
+
+  function reportAdState() {
+    const isAd = isSoop
+      ? !!document.getElementById('da_btn_skip')
+      : !!document.querySelector('[data-role="skipInfo"]');
+    if (isAd !== lastAdState) {
+      lastAdState = isAd;
+      if (!isAd) adSkipAttempted = false;
+      try { window.parent.postMessage({ type: 'chzzk-mv-ad', isAd }, '*'); } catch (e) {}
+    }
+  }
+
+  function skipAdIfPossible() {
+    if (adSkipAttempted) return;
+    if (isSoop) {
+      const btn = document.querySelector('#da_btn_skip.skip_on');
+      if (btn && btn.style.display !== 'none') {
+        adSkipAttempted = true;
+        btn.click();
+      }
+    } else {
+      const btn = document.querySelector('[data-role="skipBtn"]:not(.hide)');
+      if (btn) {
+        adSkipAttempted = true;
+        btn.click();
+      }
+    }
+  }
+
   // ── 통합 실행 ──
   function run() {
     document.querySelectorAll('video').forEach(handleVideo);
     collapseChat();
     dismissSoopAgentPopup();
     collapseSoopChat();
+    reportAdState();
+    skipAdIfPossible();
   }
 
   function init() {
@@ -199,6 +219,8 @@
     const observer = new MutationObserver(run);
     observer.observe(document.documentElement, { childList: true, subtree: true });
     setTimeout(() => observer.disconnect(), 15000);
+
+    setInterval(skipAdIfPossible, 500);
   }
 
   if (document.readyState === 'loading') {

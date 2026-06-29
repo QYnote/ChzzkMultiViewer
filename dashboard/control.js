@@ -74,15 +74,22 @@ function applyAutoSync(settings) {
       tile._lastLatencyTime = Date.now();
     });
     noSignalTimer = setInterval(() => {
-      if (mainIframe && !colMain._isOffline && Date.now() - lastLatencyTime > 10000) {
-        mainIframe.src = mainIframe.src;
-        lastLatencyTime = Date.now();
+      if (mainIframe && !colMain._isOffline) {
+        if (mainIframe._isAd) {
+          lastLatencyTime = Date.now();
+        } else if (Date.now() - lastLatencyTime > 10000) {
+          mainIframe.src = mainIframe.src;
+          lastLatencyTime = Date.now();
+        }
       }
       document.querySelectorAll('.sub-tile').forEach(tile => {
-        if (tile._iframe && tile._iframe.src && !tile._isOffline
-            && tile._lastLatencyTime && Date.now() - tile._lastLatencyTime > 10000) {
-          tile._iframe.src = tile._iframe.src;
-          tile._lastLatencyTime = Date.now();
+        if (tile._iframe && tile._iframe.src && !tile._isOffline && tile._lastLatencyTime) {
+          if (tile._iframe._isAd) {
+            tile._lastLatencyTime = Date.now();
+          } else if (Date.now() - tile._lastLatencyTime > 10000) {
+            tile._iframe.src = tile._iframe.src;
+            tile._lastLatencyTime = Date.now();
+          }
         }
       });
     }, 5000);
