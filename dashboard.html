@@ -803,6 +803,57 @@
       border-radius: 5px 5px 0 0;
     }
     .btn-sub-hcollapse:hover { background: #2a2d38; color: #00c73c; }
+
+    /* ── 서브 타일 영역 확대 ── */
+    .btn-sub-zoom.zoomed {
+      background: rgba(59, 158, 214, 0.4);
+      color: #3B9ED6;
+    }
+
+    .zoom-drag-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      cursor: crosshair;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .zoom-drag-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      text-align: center;
+      pointer-events: none;
+      white-space: nowrap;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+    }
+
+    .zoom-drag-rect {
+      position: absolute;
+      border: 2px solid rgba(59, 158, 214, 0.9);
+      background: rgba(59, 158, 214, 0.2);
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    .zoom-cancel-msg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      z-index: 11;
+      pointer-events: none;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>

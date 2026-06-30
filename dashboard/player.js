@@ -222,6 +222,8 @@ function createSubOverlay(name, iframe, tile) {
         <span class="sub-latency-label"></span>
         <button class="btn-ctrl btn-sub-refresh" title="새로고침">↻</button>
       </div>
+      <button class="btn-ctrl btn-sub-zoom" title="영역 확대">⊞</button>
+      <button class="btn-ctrl btn-sub-zoom-reset" title="원래 화면으로" style="display:none">⊡</button>
     </div>
   `;
 
@@ -260,8 +262,185 @@ function createSubOverlay(name, iframe, tile) {
     else { btnMute.textContent = '🔇'; btnMute.classList.remove('unmuted'); }
   });
 
+  // ── 영역 확대 ──
+  const btnZoom      = overlay.querySelector('.btn-sub-zoom');
+  const btnZoomReset = overlay.querySelector('.btn-sub-zoom-reset');
+  let isZoomed = false;
+  let zoomRegion = null;
+  let zoomResizeObserver = null;
+
+  function applyZoomTransform(tw, th) {
+    const rx = zoomRegion.rxPct * tw;
+    const ry = zoomRegion.ryPct * th;
+    const rw = zoomRegion.rwPct * tw;
+    const rh = zoomRegion.rhPct * th;
+    const s = Math.min(tw / rw, th / rh);
+    const offsetX = (tw - rw * s) / 2;
+    const offsetY = (th - rh * s) / 2;
+    iframe.style.transformOrigin = '0 0';
+    iframe.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${s}) translate(${-rx}px,${-ry}px)`;
+  }
+
+  // tileDx/tileDy/tileDw/tileDh: 드래그 선택 좌표 (항상 타일 픽셀 기준)
+  // 이미 확대 중이면 현재 transform의 역변환으로 원본 iframe 좌표로 매핑
+  function applyZoom(tileDx, tileDy, tileDw, tileDh) {
+    const tw = tile.clientWidth;
+    const th = tile.clientHeight;
+
+    let iframeRx, iframeRy, iframeRw, iframeRh;
+
+    if (isZoomed && zoomRegion) {
+      const origRx = zoomRegion.rxPct * tw;
+      const origRy = zoomRegion.ryPct * th;
+      const origRw = zoomRegion.rwPct * tw;
+      const origRh = zoomRegion.rhPct * th;
+      const s = Math.min(tw / origRw, th / origRh);
+      const offsetX = (tw - origRw * s) / 2;
+      const offsetY = (th - origRh * s) / 2;
+
+      function tileToIframe(px, py) {
+        return {
+          x: (px - offsetX) / s + origRx,
+          y: (py - offsetY) / s + origRy
+        };
+      }
+      const p1 = tileToIframe(tileDx, tileDy);
+      const p2 = tileToIframe(tileDx + tileDw, tileDy + tileDh);
+
+      iframeRx = Math.min(p1.x, p2.x);
+      iframeRy = Math.min(p1.y, p2.y);
+      iframeRw = Math.abs(p1.x - p2.x);
+      iframeRh = Math.abs(p1.y - p2.y);
+    } else {
+      iframeRx = tileDx;
+      iframeRy = tileDy;
+      iframeRw = tileDw;
+      iframeRh = tileDh;
+    }
+
+    zoomRegion = { rxPct: iframeRx / tw, ryPct: iframeRy / th, rwPct: iframeRw / tw, rhPct: iframeRh / th };
+    applyZoomTransform(tw, th);
+    isZoomed = true;
+    btnZoomReset.style.display = '';
+
+    if (!zoomResizeObserver) {
+      zoomResizeObserver = new ResizeObserver(() => {
+        if (isZoomed && zoomRegion) applyZoomTransform(tile.clientWidth, tile.clientHeight);
+      });
+      zoomResizeObserver.observe(tile);
+    }
+  }
+
+  function resetZoom() {
+    iframe.style.transform = '';
+    iframe.style.transformOrigin = '';
+    isZoomed = false;
+    zoomRegion = null;
+    if (zoomResizeObserver) { zoomResizeObserver.disconnect(); zoomResizeObserver = null; }
+    btnZoomReset.style.display = 'none';
+  }
+
+  function startDragSelect() {
+    const dragOverlay = document.createElement('div');
+    dragOverlay.className = 'zoom-drag-overlay';
+
+    const hint = document.createElement('div');
+    hint.className = 'zoom-drag-hint';
+    hint.textContent = '확대할 영역을 드래그하세요 · ESC로 취소';
+    dragOverlay.appendChild(hint);
+
+    const selRect = document.createElement('div');
+    selRect.className = 'zoom-drag-rect';
+    selRect.style.display = 'none';
+    dragOverlay.appendChild(selRect);
+
+    tile.appendChild(dragOverlay);
+
+    let startX = 0, startY = 0, dragging = false;
+
+    function getPos(e) {
+      const b = dragOverlay.getBoundingClientRect();
+      const x = Math.max(0, Math.min(e.clientX - b.left, b.width));
+      const y = Math.max(0, Math.min(e.clientY - b.top,  b.height));
+      return { x, y };
+    }
+
+    function cancel() {
+      dragOverlay.remove();
+      document.body.style.userSelect = '';
+      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Escape') cancel();
+    }
+    document.addEventListener('keydown', onKeydown);
+
+    dragOverlay.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      document.body.style.userSelect = 'none';
+      const p = getPos(e);
+      startX = p.x; startY = p.y;
+      dragging = true;
+      hint.style.display = 'none';
+      selRect.style.display = 'block';
+      selRect.style.left = startX + 'px';
+      selRect.style.top = startY + 'px';
+      selRect.style.width = '0';
+      selRect.style.height = '0';
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    function onMouseMove(e) {
+      const p = getPos(e);
+      const x = Math.min(startX, p.x), y = Math.min(startY, p.y);
+      const w = Math.abs(p.x - startX),  h = Math.abs(p.y - startY);
+      selRect.style.left = x + 'px';
+      selRect.style.top  = y + 'px';
+      selRect.style.width  = w + 'px';
+      selRect.style.height = h + 'px';
+    }
+
+    function onMouseUp(e) {
+      if (!dragging) return;
+      dragging = false;
+      const p = getPos(e);
+      const tw = tile.clientWidth, th = tile.clientHeight;
+      const rx = Math.min(startX, p.x), ry = Math.min(startY, p.y);
+      const rw = Math.abs(p.x - startX),  rh = Math.abs(p.y - startY);
+
+      cancel();
+
+      if (rw < tw * 0.05 || rh < th * 0.05) {
+        const msg = document.createElement('div');
+        msg.className = 'zoom-cancel-msg';
+        msg.textContent = '선택 영역이 너무 작습니다';
+        tile.appendChild(msg);
+        setTimeout(() => msg.remove(), 1500);
+        return;
+      }
+
+      applyZoom(rx, ry, rw, rh);
+    }
+  }
+
+  btnZoom.addEventListener('click', (e) => {
+    e.stopPropagation();
+    startDragSelect();
+  });
+
+  btnZoomReset.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetZoom();
+  });
+
   overlay.querySelector('.btn-sub-refresh').addEventListener('click', (e) => {
     e.stopPropagation();
+    resetZoom();
     tile.querySelector('.init-notice')?.remove();
     tile.querySelector('.manual-wide-notice')?.remove();
     tile.appendChild(createInitNotice());
