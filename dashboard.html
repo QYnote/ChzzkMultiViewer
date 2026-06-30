@@ -804,6 +804,27 @@
     }
     .btn-sub-hcollapse:hover { background: #2a2d38; color: #00c73c; }
 
+    /* ── 서브 타일 드래그 순서 변경 ── */
+    .sub-tile-dragging {
+      opacity: 0.4;
+    }
+
+    .sub-drag-indicator {
+      flex-shrink: 0;
+      background: #3B9ED6;
+      border-radius: 2px;
+      pointer-events: none;
+      width: 100%;
+      height: 3px;
+    }
+
+    .layout-wrapper[data-layout="3"] .sub-drag-indicator,
+    .layout-wrapper[data-layout="4"] .sub-drag-indicator {
+      width: 3px;
+      height: auto;
+      align-self: stretch;
+    }
+
     /* ── 서브 타일 영역 확대 ── */
     .btn-sub-zoom.zoomed {
       background: rgba(59, 158, 214, 0.4);

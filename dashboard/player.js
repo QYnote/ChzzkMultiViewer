@@ -454,6 +454,48 @@ function createSubOverlay(name, iframe, tile) {
   return overlay;
 }
 
+// ── 서브 타일 드래그 순서 변경 ──
+let subDragIndicator = null;
+
+function clearSubDragIndicator() {
+  subDragIndicator?.remove();
+  subDragIndicator = null;
+}
+
+function updateSubDragIndicator(mouseX, mouseY, dragTile) {
+  clearSubDragIndicator();
+
+  const layout = document.querySelector('.layout-wrapper')?.dataset.layout || '1';
+  const isHorizontal = layout === '3' || layout === '4';
+  const tiles = [...subStreamList.querySelectorAll('.sub-tile')].filter(t => t !== dragTile);
+
+  subDragIndicator = document.createElement('div');
+  subDragIndicator.className = 'sub-drag-indicator';
+
+  let insertBefore = null;
+  for (const t of tiles) {
+    const rect = t.getBoundingClientRect();
+    const mid = isHorizontal ? rect.left + rect.width / 2 : rect.top + rect.height / 2;
+    if ((isHorizontal ? mouseX : mouseY) < mid) { insertBefore = t; break; }
+  }
+
+  if (insertBefore) subStreamList.insertBefore(subDragIndicator, insertBefore);
+  else subStreamList.appendChild(subDragIndicator);
+}
+
+function saveSubOrder() {
+  chrome.storage.local.get(['currentViewList'], (result) => {
+    const list = result.currentViewList || [];
+    if (list.length === 0) return;
+    const newSubs = [...subStreamList.querySelectorAll('.sub-tile')].map(t => ({
+      channelId: t.dataset.channelId,
+      name: t.dataset.name,
+      platform: t.dataset.platform || 'chzzk'
+    }));
+    chrome.storage.local.set({ currentViewList: [list[0], ...newSubs] });
+  });
+}
+
 // ── 서브 타일 생성 ──
 function createSubTile(streamer) {
   const tile = document.createElement('div');
@@ -500,11 +542,51 @@ function createSubTile(streamer) {
     if (imageUrl) tile.appendChild(createSubProfileImg(imageUrl, tile));
   });
 
-  tile.addEventListener('click', (e) => {
-    if (!e.target.closest('.sub-controls')) {
-      if (colMain.querySelector('.init-notice') || tile.querySelector('.init-notice')) return;
-      swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name, platform: tile.dataset.platform || 'chzzk' });
+  tile.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.sub-controls') || e.target.closest('.btn-sub-remove') || e.target.closest('.zoom-drag-overlay')) return;
+
+    const startX = e.clientX, startY = e.clientY;
+    let isDragging = false;
+
+    function onMouseMove(mv) {
+      if (!isDragging && (Math.abs(mv.clientX - startX) > 5 || Math.abs(mv.clientY - startY) > 5)) {
+        isDragging = true;
+        tile.classList.add('sub-tile-dragging');
+        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'grabbing';
+      }
+      if (isDragging) updateSubDragIndicator(mv.clientX, mv.clientY, tile);
     }
+
+    function onMouseUp(mu) {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+
+      if (isDragging) {
+        tile.classList.remove('sub-tile-dragging');
+        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        if (subDragIndicator?.parentNode) subDragIndicator.parentNode.insertBefore(tile, subDragIndicator);
+        clearSubDragIndicator();
+        saveSubOrder();
+        tile.querySelector('.init-notice')?.remove();
+        tile.querySelector('.manual-wide-notice')?.remove();
+        tile.appendChild(createInitNotice());
+        tile._iframe?.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+      } else {
+        if (!mu.target.closest('.sub-controls') && !mu.target.closest('.btn-sub-remove')) {
+          if (!colMain.querySelector('.init-notice') && !tile.querySelector('.init-notice')) {
+            swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name, platform: tile.dataset.platform || 'chzzk' });
+          }
+        }
+      }
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   });
 
   return tile;
