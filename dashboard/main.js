@@ -246,4 +246,11 @@ function initButtonEvents() {
       chrome.storage.local.set({ subPanelHeight });
     }
   });
+
+  subStreamList?.addEventListener('wheel', (e) => {
+    const layout = document.querySelector('.layout-wrapper')?.dataset.layout || '1';
+    if (layout !== '3' && layout !== '4') return;
+    e.preventDefault();
+    subStreamList.scrollLeft += e.deltaY;
+  }, { passive: false });
 }
