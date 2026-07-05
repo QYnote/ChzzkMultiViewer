@@ -79,7 +79,7 @@ window.addEventListener('message', (e) => {
       const now = Date.now();
       if (!colMain._isOffline && !mainIframe._isAd && autoSyncSettings.isAutoSync && sec >= autoSyncSettings.limitSeconds
           && now - mainLastSyncTime > SYNC_COOLDOWN) {
-        mainIframe.src = mainIframe.src;
+        mainIframe.src = buildIframeSrc(mainIframe);
         lastLatencyTime = now;
         mainLastSyncTime = now;
       }
