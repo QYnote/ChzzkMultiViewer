@@ -32,6 +32,7 @@ function swapWithMain(clickedTile, subStreamer) {
     if (imageUrl) clickedTile.appendChild(createSubProfileImg(imageUrl, clickedTile));
   });
 
+  subIframe.dataset.muted = '0';
   mainIframe = subIframe;
   currentMain = subStreamer;
   mainStreamerName.textContent = subStreamer.name;
