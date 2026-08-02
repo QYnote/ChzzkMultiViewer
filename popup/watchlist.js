@@ -10,159 +10,211 @@ function setMiniButtonStyle(btn, bgColor) {
   btn.style.width = 'auto';
 }
 
-// ── 스트리머 목록 렌더링 (시청목록 / 즐겨찾기 공용) ──
-function renderStreamerList(container, list, type, currentList, favoriteList) {
+// ── 시청 목록 드래그 상태 (메인 화면 고정 박스 / 서브 목록 재정렬 공용) ──
+let wlDragIndex = null;
+
+// ── 메인 화면 고정 박스 드롭 이벤트 (재렌더링과 무관하게 최초 1회만 등록) ──
+if (mainScreenSlotDiv) {
+  mainScreenSlotDiv.addEventListener('dragover', (e) => {
+    if (wlDragIndex === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    mainScreenSlotDiv.classList.add('drag-over');
+  });
+  mainScreenSlotDiv.addEventListener('dragleave', () => mainScreenSlotDiv.classList.remove('drag-over'));
+  mainScreenSlotDiv.addEventListener('drop', (e) => {
+    e.preventDefault();
+    mainScreenSlotDiv.classList.remove('drag-over');
+    if (wlDragIndex === null) return;
+    setAsMain(wlDragIndex);
+    wlDragIndex = null;
+  });
+}
+
+// ── 시청 목록: 메인 화면 고정 박스 / 서브 목록 분리 렌더링 ──
+function renderWatchlist(container, list, favoriteList) {
   if (!container) return;
   container.innerHTML = '';
+  if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '';
 
   if (list.length === 0) {
-    const emptyText = type === 'current' ? '등록된 시청 스트리머가 없습니다.' : '보관함이 비어 있습니다.';
-    container.innerHTML = `<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">${emptyText}</p>`;
+    container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 시청 스트리머가 없습니다.</p>';
+    if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '<p style="color:#999; text-align:center; margin:4px 0; font-size:11px;">메인 채널 없음</p>';
     return;
   }
 
-  list.forEach((streamer, index) => {
-    const itemDiv = document.createElement('div');
-    itemDiv.style.display = 'flex';
-    itemDiv.style.justifyContent = 'space-between';
-    itemDiv.style.alignItems = 'center';
-    itemDiv.style.padding = '2px 4px';
-    itemDiv.style.borderBottom = '1px solid #eee';
-    itemDiv.style.fontSize = '12px';
+  // 메인 화면 (0번) — 고정 박스, 드롭 시 setAsMain 교체
+  if (mainScreenSlotDiv) {
+    mainScreenSlotDiv.appendChild(buildStreamerItem(list[0], 0, list, favoriteList));
+  }
 
-    const textSpan = document.createElement('span');
-    textSpan.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden;';
+  // 서브 채널 (1번~) — 드래그 재정렬 가능
+  const subList = list.slice(1);
+  if (subList.length === 0) {
+    container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 서브 채널이 없습니다.</p>';
+    return;
+  }
 
-    const iconEl = document.createElement('img');
-    iconEl.className = 'platform-icon';
-    iconEl.src = (streamer.platform === 'soop')
-      ? 'resources/soop_icon_16.jpg'
-      : 'resources/chzzk_icon_16.jpg';
-    iconEl.alt = '';
-    textSpan.appendChild(iconEl);
+  subList.forEach((streamer, subIdx) => {
+    const index = subIdx + 1;
+    const itemDiv = buildStreamerItem(streamer, index, list, favoriteList);
+    itemDiv.draggable = true;
+    itemDiv.style.cursor = 'grab';
 
-    const nameStrong = document.createElement('strong');
-    nameStrong.textContent = streamer.name;
-    textSpan.appendChild(nameStrong);
+    itemDiv.addEventListener('dragstart', (e) => {
+      wlDragIndex = index;
+      setTimeout(() => { itemDiv.style.opacity = '0.4'; }, 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    itemDiv.addEventListener('dragend', () => {
+      wlDragIndex = null;
+      itemDiv.style.opacity = '';
+      clearInsertLine(itemDiv);
+    });
+    itemDiv.addEventListener('dragover', (e) => {
+      if (wlDragIndex === null || wlDragIndex === index) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setInsertLine(itemDiv, getDropPos(e, itemDiv));
+    });
+    itemDiv.addEventListener('dragleave', () => clearInsertLine(itemDiv));
+    itemDiv.addEventListener('drop', (e) => {
+      e.preventDefault();
+      clearInsertLine(itemDiv);
+      if (wlDragIndex === null || wlDragIndex === index) return;
+      reorderWatchlist(wlDragIndex, streamer.channelId, getDropPos(e, itemDiv));
+      wlDragIndex = null;
+    });
 
-    if (type === 'favorite') {
-      const liveBadge = document.createElement('span');
-      liveBadge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
-      liveBadge.textContent = 'OFF';
-      textSpan.appendChild(liveBadge);
-
-      chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId: streamer.channelId, platform: streamer.platform || 'chzzk' }, (response) => {
-        if (!response?.success || response.openLive == null) return;
-        liveBadge.style.visibility = 'visible';
-        liveBadge.textContent = response.openLive ? 'LIVE' : 'OFF';
-        liveBadge.style.background = response.openLive ? '#e50914' : '#e1e4e6';
-        liveBadge.style.color = response.openLive ? '#fff' : '#767c82';
-      });
-    }
-
-    itemDiv.appendChild(textSpan);
-
-    const actionGroup = document.createElement('div');
-    actionGroup.style.display = 'flex';
-    actionGroup.style.gap = '4px';
-
-    if (type === 'current') {
-      // ▲▼ 세로 그룹
-      const hasUp   = index > 1;
-      const hasDown = index > 0 && index !== list.length - 1;
-      const bothArrows = hasUp && hasDown;
-
-      const arrowGroup = document.createElement('div');
-      arrowGroup.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
-
-      if (hasUp) {
-        const btnUp = document.createElement('button');
-        btnUp.textContent = '▲';
-        setMiniButtonStyle(btnUp, '#868e96');
-        btnUp.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-        if (bothArrows) btnUp.style.fontSize = '10px';
-        btnUp.addEventListener('click', () => moveStreamer(index, -1));
-        arrowGroup.appendChild(btnUp);
-      }
-      if (hasDown) {
-        const btnDown = document.createElement('button');
-        btnDown.textContent = '▼';
-        setMiniButtonStyle(btnDown, '#868e96');
-        btnDown.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-        if (bothArrows) btnDown.style.fontSize = '10px';
-        btnDown.addEventListener('click', () => moveStreamer(index, 1));
-        arrowGroup.appendChild(btnDown);
-      }
-      if (arrowGroup.children.length > 0) actionGroup.appendChild(arrowGroup);
-
-      // X 버튼
-      const btnDel = document.createElement('button');
-      btnDel.textContent = 'X';
-      setMiniButtonStyle(btnDel, '#dc3545');
-      btnDel.addEventListener('click', () => deleteStreamer('current', index));
-      actionGroup.appendChild(btnDel);
-
-      // ⋯ 더보기 버튼
-      const btnMore = document.createElement('button');
-      btnMore.textContent = '⋯';
-      setMiniButtonStyle(btnMore, '#868e96');
-
-      btnMore.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.watchlist-more-menu').forEach(m => m.remove());
-
-        const menu = document.createElement('div');
-        menu.className = 'watchlist-more-menu';
-        menu.style.cssText = 'position:fixed; background:#fff; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:130px; overflow:hidden;';
-
-        const menuItemBase = 'padding:7px 12px; font-size:11px; white-space:nowrap;';
-
-        // ▶ 메인으로 지정
-        const itemMain = document.createElement('div');
-        itemMain.style.cssText = menuItemBase + (index === 0 ? 'color:#ccc; cursor:default;' : 'color:#333; cursor:pointer;');
-        itemMain.textContent = '▶ 메인으로 지정';
-        if (index !== 0) {
-          itemMain.addEventListener('mouseenter', () => itemMain.style.background = '#f5f5f5');
-          itemMain.addEventListener('mouseleave', () => itemMain.style.background = '');
-          itemMain.addEventListener('click', (e) => { e.stopPropagation(); setAsMain(index); menu.remove(); });
-        }
-
-        menu.appendChild(itemMain);
-
-        // ☆ 즐겨찾기 추가 (이미 등록된 항목은 표시 안 함)
-        const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
-        if (!inFav) {
-          const itemFav = document.createElement('div');
-          itemFav.style.cssText = menuItemBase + 'color:#333; cursor:pointer;';
-          itemFav.textContent = '☆ 즐겨찾기 추가';
-          itemFav.addEventListener('mouseenter', () => itemFav.style.background = '#f5f5f5');
-          itemFav.addEventListener('mouseleave', () => itemFav.style.background = '');
-          itemFav.addEventListener('click', (e) => { e.stopPropagation(); addToFavorite(streamer); menu.remove(); });
-          menu.appendChild(itemFav);
-        }
-
-        document.body.appendChild(menu);
-
-        // 버튼 기준으로 위치 결정 (뷰포트 아래 잘리면 위로 뒤집기)
-        const btnRect = btnMore.getBoundingClientRect();
-        const menuHeight = menu.offsetHeight;
-        const top = (btnRect.bottom + menuHeight > window.innerHeight)
-          ? btnRect.top - menuHeight - 2
-          : btnRect.bottom + 2;
-        menu.style.top  = top + 'px';
-        menu.style.left = (btnRect.right - menu.offsetWidth) + 'px';
-
-        setTimeout(() => {
-          document.addEventListener('click', () => menu.remove(), { once: true });
-        }, 0);
-      });
-
-      actionGroup.appendChild(btnMore);
-    }
-
-    itemDiv.appendChild(actionGroup);
     container.appendChild(itemDiv);
   });
+}
+
+// ── 시청 목록 항목 DOM 생성 ──
+function buildStreamerItem(streamer, index, list, favoriteList) {
+  const itemDiv = document.createElement('div');
+  itemDiv.style.display = 'flex';
+  itemDiv.style.justifyContent = 'space-between';
+  itemDiv.style.alignItems = 'center';
+  itemDiv.style.padding = '2px 4px';
+  itemDiv.style.borderBottom = '1px solid #eee';
+  itemDiv.style.fontSize = '12px';
+
+  const textSpan = document.createElement('span');
+  textSpan.style.cssText = 'display:flex; align-items:center; gap:5px; overflow:hidden;';
+
+  const iconEl = document.createElement('img');
+  iconEl.className = 'platform-icon';
+  iconEl.src = (streamer.platform === 'soop')
+    ? 'resources/soop_icon_16.jpg'
+    : 'resources/chzzk_icon_16.jpg';
+  iconEl.alt = '';
+  textSpan.appendChild(iconEl);
+
+  const nameStrong = document.createElement('strong');
+  nameStrong.textContent = streamer.name;
+  textSpan.appendChild(nameStrong);
+
+  itemDiv.appendChild(textSpan);
+
+  const actionGroup = document.createElement('div');
+  actionGroup.style.display = 'flex';
+  actionGroup.style.gap = '4px';
+
+  // ▲▼ 세로 그룹
+  const hasUp   = index > 1;
+  const hasDown = index > 0 && index !== list.length - 1;
+  const bothArrows = hasUp && hasDown;
+
+  const arrowGroup = document.createElement('div');
+  arrowGroup.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
+
+  if (hasUp) {
+    const btnUp = document.createElement('button');
+    btnUp.textContent = '▲';
+    setMiniButtonStyle(btnUp, '#868e96');
+    btnUp.style.padding = bothArrows ? '0px 5px' : '3px 5px';
+    if (bothArrows) btnUp.style.fontSize = '10px';
+    btnUp.addEventListener('click', () => moveStreamer(index, -1));
+    arrowGroup.appendChild(btnUp);
+  }
+  if (hasDown) {
+    const btnDown = document.createElement('button');
+    btnDown.textContent = '▼';
+    setMiniButtonStyle(btnDown, '#868e96');
+    btnDown.style.padding = bothArrows ? '0px 5px' : '3px 5px';
+    if (bothArrows) btnDown.style.fontSize = '10px';
+    btnDown.addEventListener('click', () => moveStreamer(index, 1));
+    arrowGroup.appendChild(btnDown);
+  }
+  if (arrowGroup.children.length > 0) actionGroup.appendChild(arrowGroup);
+
+  // X 버튼
+  const btnDel = document.createElement('button');
+  btnDel.textContent = 'X';
+  setMiniButtonStyle(btnDel, '#dc3545');
+  btnDel.addEventListener('click', () => deleteStreamer('current', index));
+  actionGroup.appendChild(btnDel);
+
+  // ⋯ 더보기 버튼
+  const btnMore = document.createElement('button');
+  btnMore.textContent = '⋯';
+  setMiniButtonStyle(btnMore, '#868e96');
+
+  btnMore.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.watchlist-more-menu').forEach(m => m.remove());
+
+    const menu = document.createElement('div');
+    menu.className = 'watchlist-more-menu';
+    menu.style.cssText = 'position:fixed; background:#fff; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:130px; overflow:hidden;';
+
+    const menuItemBase = 'padding:7px 12px; font-size:11px; white-space:nowrap;';
+
+    // ▶ 메인으로 지정
+    const itemMain = document.createElement('div');
+    itemMain.style.cssText = menuItemBase + (index === 0 ? 'color:#ccc; cursor:default;' : 'color:#333; cursor:pointer;');
+    itemMain.textContent = '▶ 메인으로 지정';
+    if (index !== 0) {
+      itemMain.addEventListener('mouseenter', () => itemMain.style.background = '#f5f5f5');
+      itemMain.addEventListener('mouseleave', () => itemMain.style.background = '');
+      itemMain.addEventListener('click', (e) => { e.stopPropagation(); setAsMain(index); menu.remove(); });
+    }
+
+    menu.appendChild(itemMain);
+
+    // ☆ 즐겨찾기 추가 (이미 등록된 항목은 표시 안 함)
+    const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
+    if (!inFav) {
+      const itemFav = document.createElement('div');
+      itemFav.style.cssText = menuItemBase + 'color:#333; cursor:pointer;';
+      itemFav.textContent = '☆ 즐겨찾기 추가';
+      itemFav.addEventListener('mouseenter', () => itemFav.style.background = '#f5f5f5');
+      itemFav.addEventListener('mouseleave', () => itemFav.style.background = '');
+      itemFav.addEventListener('click', (e) => { e.stopPropagation(); addToFavorite(streamer); menu.remove(); });
+      menu.appendChild(itemFav);
+    }
+
+    document.body.appendChild(menu);
+
+    // 버튼 기준으로 위치 결정 (뷰포트 아래 잘리면 위로 뒤집기)
+    const btnRect = btnMore.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight;
+    const top = (btnRect.bottom + menuHeight > window.innerHeight)
+      ? btnRect.top - menuHeight - 2
+      : btnRect.bottom + 2;
+    menu.style.top  = top + 'px';
+    menu.style.left = (btnRect.right - menu.offsetWidth) + 'px';
+
+    setTimeout(() => {
+      document.addEventListener('click', () => menu.remove(), { once: true });
+    }, 0);
+  });
+
+  actionGroup.appendChild(btnMore);
+
+  itemDiv.appendChild(actionGroup);
+  return itemDiv;
 }
 
 // ── 수동 스트리머 추가 이벤트 ──

@@ -158,6 +158,21 @@
       overflow-y: auto;
       padding: 4px;
     }
+    #current-view-list { height: 340px; }
+
+    /* 메인 화면 고정 박스 */
+    .main-screen-slot {
+      background: #fff;
+      border: 1px solid var(--clr-border);
+      border-radius: 6px;
+      padding: 4px;
+      margin-bottom: 6px;
+      min-height: 28px;
+    }
+    .main-screen-slot.drag-over {
+      background: var(--clr-light);
+      outline: 1px dashed var(--clr-dark);
+    }
 
     /* 입력 폼 */
     .input-group { margin-bottom: 8px; }
@@ -359,6 +374,8 @@
       <div class="watch-columns">
         <div class="watch-column">
           <p class="column-title">멀티뷰 표시 목록</p>
+          <p class="column-title" style="font-size:10px; color:var(--clr-text-sub); margin-top:0;">📌 메인 화면</p>
+          <div class="main-screen-slot" id="main-screen-slot"></div>
           <div class="list-container" id="current-view-list">
             <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 스트리머가 없습니다.</p>
           </div>

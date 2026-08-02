@@ -34,13 +34,18 @@
     v.volume = vol;
   }
 
+  // 음소거 여부만 제어 (볼륨 수치는 건드리지 않음 — 치지직에 저장된 기존 볼륨 유지)
+  function setMuted(v, muted) {
+    v.muted = muted;
+  }
+
   function handleVideo(v) {
     if (!guardedVideos.has(v)) {
       guardedVideos.add(v);
 
       v.addEventListener('volumechange', () => {
         if (forceMuted && !v.muted) {
-          applyVolume(v, 0);
+          setMuted(v, true);
         } else if (!forceMuted) {
           try {
             window.parent.postMessage({ type: 'chzzk-mv-vol', v: v.volume }, '*');
@@ -48,7 +53,7 @@
         }
       }, true);
 
-      applyVolume(v, forceMuted ? 0 : 1);
+      setMuted(v, forceMuted);
       startLatencyReporting(v);
 
       const onPlaying = () => setTimeout(triggerWideMode, 2000);
@@ -58,7 +63,7 @@
         v.addEventListener('playing', onPlaying, { once: true });
       }
     } else if (forceMuted) {
-      applyVolume(v, 0);
+      setMuted(v, true);
     }
   }
 
