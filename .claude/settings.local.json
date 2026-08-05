@@ -13,7 +13,8 @@
       "Bash(git mv *)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.json','utf8'\\)\\).permissions.additionalDirectories.forEach\\(d=>console.log\\(d\\)\\)\")"
     ]
   }
 }
