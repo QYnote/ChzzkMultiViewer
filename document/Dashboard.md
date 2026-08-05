@@ -1,4 +1,4 @@
-[설계서](README.md) › [Architecture](Architecture.md) › Dashboard
+[설계서](../README.md) › [Architecture](Architecture.md) › Dashboard
 
 # Dashboard
 

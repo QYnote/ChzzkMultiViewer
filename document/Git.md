@@ -1,4 +1,4 @@
-[설계서](README.md) › Git
+[설계서](../README.md) › Git
 
 # Git
 
@@ -22,7 +22,7 @@
 
 1. [Overview](Overview.md) 기준으로 이번 작업 개발 내역 보고
 2. 확인 후 커밋
-3. [README](README.md)의 `업데이트 예정 기능`에서 완료된 항목을 `[x]`로 표시
+3. [README](../README.md)의 `업데이트 예정 기능`에서 완료된 항목을 `[x]`로 표시
 4. `feature` 브랜치를 `develop`에 병합
 5. 병합 완료 후 `feature` 브랜치 삭제
 
@@ -38,7 +38,7 @@
 **1단계 — 배포 준비**
 1. 진행 중인 `feature` 브랜치는 건드리지 않는다
 2. `manifest.json`의 `version`을 규칙에 맞게 올린다
-3. [README](README.md)의 `업데이트 예정 기능`에서 `[x]` 표시된 항목을 전부 삭제한다
+3. [README](../README.md)의 `업데이트 예정 기능`에서 `[x]` 표시된 항목을 전부 삭제한다
 4. [Changelog](Changelog.md)에 새 버전 항목을 추가한다 (사용자가 체감할 수 있는 변화 위주, 내부 구현 용어는 쓰지 않음)
 5. `develop` → `master` 병합
 6. 병합 내용을 요약 보고하고 push 여부 확인

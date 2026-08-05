@@ -1,4 +1,4 @@
-[설계서](README.md) › [Architecture](Architecture.md) › ContentScript
+[설계서](../README.md) › [Architecture](Architecture.md) › ContentScript
 
 # ContentScript
 

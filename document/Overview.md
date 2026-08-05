@@ -1,4 +1,4 @@
-[설계서](README.md) › Overview
+[설계서](../README.md) › Overview
 
 # Overview
 

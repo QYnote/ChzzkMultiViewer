@@ -1,4 +1,4 @@
-[설계서](README.md) › [Architecture](Architecture.md) › Background
+[설계서](../README.md) › [Architecture](Architecture.md) › Background
 
 # Background
 
