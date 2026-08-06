@@ -17,12 +17,15 @@ Dashboard가 생성한 iframe 안, 치지직/SOOP 방송 페이지에 주입되�
 - 탭 가시성 복귀 (`visibilitychange`)
 
 **입력**
-- postMessage: `{ type: 'chzzk-mv-audio', volume | muted }`, `{ type: 'chzzk-mv-retrigger-wide' }`
+- postMessage: `{ type: 'chzzk-mv-audio', volume, muted, lock }`, `{ type: 'chzzk-mv-retrigger-wide' }`
+  - `volume`(0~1)·`muted`·`lock`은 각각 독립이다. `lock`은 방송 페이지가 스스로 음소거를 푸는 것을 막는 잠금으로 **서브 화면에만** 건다. 볼륨 0과 잠금을 분리해야 메인 볼륨이 0이어도 사용자가 직접 풀 수 있다
+  - ⚠️ `volume`은 **꼭 필요할 때만 보낸다.** 볼륨 수치를 덮어쓰면 방송 페이지가 그 값을 채널별 상태로 저장해, 다시 로드될 때 페이지가 보여주는 상태와 실제 소리가 어긋난다. 음소거만 시킬 때는 `volume` 없이 `muted`만 보낸다
 - URL 쿼리: `mv_ext`, `mute`
 
 **출력** (부모 프레임으로 postMessage)
+- `chzzk-mv-ready` — 영상을 처음 확보한 시점. 문서가 다시 로드되면 다시 나간다
 - `chzzk-mv-latency` — 초 단위 딜레이, 1초 주기
-- `chzzk-mv-vol` — 사용자가 영상 위에서 직접 볼륨을 바꿨을 때
+- `chzzk-mv-vol` — 현재 볼륨과 음소거 여부. 볼륨 변경 시점과 1초 주기 양쪽에서 보낸다 (변경 이벤트만 의존하면 방송 페이지가 저장된 볼륨을 복원하는 시점이 더 빠를 때 값을 놓친다)
 - `chzzk-mv-wide-done` — 와이드 전환 성공/실패
 - `chzzk-mv-ad` — 광고 재생 여부 변화
 

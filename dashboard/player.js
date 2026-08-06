@@ -235,8 +235,14 @@ function createSubOverlay(name, iframe, tile) {
     slider.style.setProperty('--pct', `${slider.value}%`);
   }
 
+  // 서브는 볼륨이 0일 때 잠가 둔다. 방송 페이지가 스스로 음소거를 푸는 것을 막기 위함이다.
+  // 음소거할 때는 볼륨 수치를 함께 보내지 않는다. 0을 보내면 방송 페이지가 그 값을
+  // 저장해, 나중에 이 화면이 메인으로 올라올 때 볼륨 0으로 되살아난다.
   function sendVol(pct) {
-    iframe.contentWindow?.postMessage({ type: 'chzzk-mv-audio', volume: pct / 100 }, '*');
+    const msg = pct === 0
+      ? { type: 'chzzk-mv-audio', muted: true, lock: true }
+      : { type: 'chzzk-mv-audio', volume: pct / 100, muted: false, lock: false };
+    iframe.contentWindow?.postMessage(msg, '*');
   }
 
   function setMutedUI(muted) {
