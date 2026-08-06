@@ -49,6 +49,10 @@ function swapWithMain(clickedTile, subStreamer) {
   updateOfflineNotice(colMain, subStreamer.channelId, subIframe);
   updateOfflineNotice(clickedTile, prevMain.channelId, oldMainIframe);
 
+  // 화면과 시청 목록을 일치시킨다. 저장하지 않으면 이후 서브 순서를
+  // 변경할 때 저장소의 옛 메인과 화면의 서브 목록이 어긋난다.
+  saveViewListFromScreen();
+
   const restoreVol = oldMainIframe._trackedVol ?? 1;
   console.log('[mv-swap] 스왑 볼륨 적용 | _trackedVol:', oldMainIframe._trackedVol, '| restoreVol:', restoreVol);
 

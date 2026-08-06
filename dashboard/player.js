@@ -483,17 +483,24 @@ function updateSubDragIndicator(mouseX, mouseY, dragTile) {
   else subStreamList.appendChild(subDragIndicator);
 }
 
-function saveSubOrder() {
-  chrome.storage.local.get(['currentViewList'], (result) => {
-    const list = result.currentViewList || [];
-    if (list.length === 0) return;
-    const newSubs = [...subStreamList.querySelectorAll('.sub-tile')].map(t => ({
+// 메인은 저장소가 아니라 현재 화면 기준(currentMain)으로 잡는다.
+// 스왑은 화면만 바꾸므로, 스왑 후에는 저장소의 0번이 이미 옛 메인이다.
+function saveViewListFromScreen() {
+  if (!currentMain) return;
+  const list = [
+    {
+      channelId: currentMain.channelId,
+      name: currentMain.name,
+      platform: currentMain.platform || 'chzzk'
+    },
+    ...[...subStreamList.querySelectorAll('.sub-tile')].map(t => ({
       channelId: t.dataset.channelId,
       name: t.dataset.name,
       platform: t.dataset.platform || 'chzzk'
-    }));
-    chrome.storage.local.set({ currentViewList: [list[0], ...newSubs] });
-  });
+    }))
+  ];
+  loadedViewList = list.map(s => s.channelId);
+  chrome.storage.local.set({ currentViewList: list });
 }
 
 // ── 서브 타일 생성 ──
@@ -519,6 +526,7 @@ function createSubTile(streamer) {
     const channelId = tile.dataset.channelId;
     chrome.storage.local.get(['currentViewList'], (result) => {
       const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
+      loadedViewList = list.map(s => s.channelId);
       chrome.storage.local.set({ currentViewList: list }, () => {
         tile.remove();
         streamerCountEl.textContent = list.length;
@@ -571,7 +579,7 @@ function createSubTile(streamer) {
         document.body.style.cursor = '';
         if (subDragIndicator?.parentNode) subDragIndicator.parentNode.insertBefore(tile, subDragIndicator);
         clearSubDragIndicator();
-        saveSubOrder();
+        saveViewListFromScreen();
         tile.querySelector('.init-notice')?.remove();
         tile.querySelector('.manual-wide-notice')?.remove();
         tile.appendChild(createInitNotice());

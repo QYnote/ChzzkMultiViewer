@@ -70,7 +70,7 @@ Popup과 Dashboard가 직접 연결되어 있지 않을 때도 아래 키를 매
 
 | 키 | 내용 | 주로 쓰는 쪽 |
 |---|---|---|
-| `currentViewList` | 시청 목록 배열, 0번 인덱스 = 메인 | Popup(읽기·쓰기) · Dashboard(읽기 + 서브 순서 변경·삭제 시 쓰기) |
+| `currentViewList` | 시청 목록 배열, 0번 인덱스 = 메인 | Popup(읽기·쓰기) · Dashboard(읽기 + 스왑·서브 순서 변경·삭제 시 쓰기) |
 | `favoriteTree` | 즐겨찾기 폴더 트리 | Popup |
 | `favoriteMasterList` | 구 형식 즐겨찾기 목록. `favoriteTree`가 없을 때만 읽어 트리로 변환·저장하는 이관용 키 | Popup(읽기) |
 | `systemSettings` | 자동 동기화 여부·기준 시간·프로필 표시 방식. 읽을 때 구 형식 프로필 표시값을 현재 4종 체계로 변환한다 | Popup(쓰기) · Dashboard(읽기, `onChanged`로 실시간 반영) |
