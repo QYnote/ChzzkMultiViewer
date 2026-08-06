@@ -101,11 +101,18 @@ window.addEventListener('message', (e) => {
     }
     return;
   }
+  if (e.data?.type === 'chzzk-mv-ready') {
+    // 문서가 (다시) 로드되어 영상을 잡은 시점. 이 iframe에 지정해 둔 볼륨을 다시 보낸다.
+    document.querySelectorAll('iframe').forEach(f => {
+      if (e.source === f.contentWindow) applyTargetAudio(f);
+    });
+    return;
+  }
   if (e.data?.type !== 'chzzk-mv-vol') return;
   if (!mainIframe) return;
   try {
     if (e.source === mainIframe.contentWindow) {
-      mainIframe._trackedVol = e.data.v;
+      mainIframe._trackedMuted = !!e.data.muted;
     }
   } catch (err) {}
 });

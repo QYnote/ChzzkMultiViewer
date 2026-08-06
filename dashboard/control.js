@@ -1,5 +1,8 @@
 // ── 메인 ↔ 서브 교체 ──
-// insertBefore로 이동 → document 내 이동이므로 iframe 재로드 없음
+// iframe을 insertBefore로 다른 부모에 옮기면 브라우저가 그 안의 문서를 버리고
+// 다시 로드한다. 그래서 옮긴 직후에 보낸 메시지는 도착하지 못하고, 새 문서는
+// 주소에 박힌 mute 값으로 다시 초기화된다. 아래에서 주소와 목표 볼륨을 역할에
+// 맞게 다시 맞춰 준다.
 function swapWithMain(clickedTile, subStreamer) {
   if (!currentMain || currentMain.channelId === subStreamer.channelId) return;
 
@@ -32,7 +35,9 @@ function swapWithMain(clickedTile, subStreamer) {
     if (imageUrl) clickedTile.appendChild(createSubProfileImg(imageUrl, clickedTile));
   });
 
-  subIframe.dataset.muted = '0';
+  // 새 메인의 주소는 음소거인 채로 둔다. 소리가 켜진 주소로 로드하면
+  // 브라우저의 자동 재생 차단에 걸려 영상이 시작되지 않을 수 있다.
+  // 음소거 해제는 아래에서 준비 신호를 받은 뒤에 한다.
   mainIframe = subIframe;
   currentMain = subStreamer;
   mainStreamerName.textContent = subStreamer.name;
@@ -53,17 +58,35 @@ function swapWithMain(clickedTile, subStreamer) {
   // 변경할 때 저장소의 옛 메인과 화면의 서브 목록이 어긋난다.
   saveViewListFromScreen();
 
-  const restoreVol = oldMainIframe._trackedVol ?? 1;
-  console.log('[mv-swap] 스왑 볼륨 적용 | _trackedVol:', oldMainIframe._trackedVol, '| restoreVol:', restoreVol);
+  // 서브로 내려간 옛 메인은 주소까지 음소거로 바꾼다. 주소를 그대로 두면
+  // 다시 로드될 때 소리가 켜진 채 시작해 서브에서 소리가 난다.
+  oldMainIframe.dataset.muted = '1';
+  const mutedSrc = buildIframeSrc(oldMainIframe);
+  if (oldMainIframe.src !== mutedSrc) oldMainIframe.src = mutedSrc;
 
-  function applySwapVolumes() {
-    subIframe.contentWindow?.postMessage({ type: 'chzzk-mv-audio', volume: restoreVol }, '*');
-    oldMainIframe?.contentWindow?.postMessage({ type: 'chzzk-mv-audio', volume: 0 }, '*');
-  }
+  // 음소거 여부만 넘기고 볼륨 수치는 넘기지 않는다. 볼륨은 방송 페이지가
+  // 채널별로 기억한 값을 그대로 쓰게 두어야, 우리가 덮어쓴 값과 페이지가 보여주는
+  // 상태가 어긋나지 않는다. 새 메인은 잠그지 않으므로 사용자가 직접 조절할 수 있다.
+  const wasMuted = !!oldMainIframe._trackedMuted;
 
-  applySwapVolumes();
-  setTimeout(applySwapVolumes, 500);
-  setTimeout(applySwapVolumes, 1500);
+  setTargetAudio(oldMainIframe, { muted: true,     lock: true  });
+  setTargetAudio(subIframe,     { muted: wasMuted, lock: false });
+}
+
+// ── 목표 음량 상태 지정 ──
+// iframe을 다른 부모로 옮기면 브라우저가 문서를 다시 로드하므로, 옮긴 직후에
+// 보낸 지정은 도착하지 못하고 사라진다. 목표 상태를 iframe에 기억해 두었다가
+// 준비 신호(chzzk-mv-ready)를 받을 때마다 다시 보내 확실히 적용시킨다.
+function setTargetAudio(iframe, audio) {
+  if (!iframe) return;
+  iframe._targetAudio = audio;
+  applyTargetAudio(iframe);
+}
+
+function applyTargetAudio(iframe) {
+  const audio = iframe?._targetAudio;
+  if (!audio) return;
+  iframe.contentWindow?.postMessage({ type: 'chzzk-mv-audio', ...audio }, '*');
 }
 
 // ── 자동 동기화 ──
