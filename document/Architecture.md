@@ -5,27 +5,22 @@
 > **다루는 내용:** 계층 구성 · 의존 방향 · 통신 규칙
 > **갱신 트리거:** 계층이 추가·제거되거나 계층 간 통신 방식이 바뀔 때
 
-## 하위 문서
-
-| 문서 | 다루는 내용 |
-|---|---|
-| [Background](Background.md) | 백그라운드 서비스 워커 — 책임/계약 |
-| [ContentScript](ContentScript.md) | 콘텐츠 스크립트 — 책임/계약 |
-| [Popup](Popup.md) | 팝업 — 책임/계약 |
-| [Dashboard](Dashboard.md) | 대시보드 — 책임/계약 |
-| [Platforms](Platforms.md) | 플랫폼 어댑터(치지직/SOOP) — 책임/계약 |
-
 ## 본문
 
 ### 계층 구성
 
+계층 이름을 누르면 해당 모듈의 책임·계약 문서로 이동한다. 이 표가 하위 문서 목록을 겸한다.
+
 | 계층 | 실행 컨텍스트 | 역할 |
 |---|---|---|
 | [Background](Background.md) | Service Worker | 로그인 세션 쿠키 주입, 팔로잉/생방송 상태 API 대리 호출 |
-| [ContentScript](ContentScript.md) | 방송 페이지 iframe (격리 월드 + SOOP는 MAIN 월드 추가) | 볼륨 제어, 딜레이 측정, 와이드 모드 전환, 채팅 접기, 광고 스킵 |
 | [Popup](Popup.md) | 팝업 페이지 | 시청 목록·즐겨찾기·설정 관리, 대시보드 열기 |
 | [Dashboard](Dashboard.md) | 대시보드 탭 | 멀티뷰 화면 조립, 스왑, 자동 동기화, 레이아웃 |
+| ┗ [ContentScript](ContentScript.md) | 방송 페이지 iframe (격리 월드 + SOOP는 MAIN 월드 추가) | 볼륨 제어, 딜레이 측정, 와이드 모드 전환, 채팅 접기, 광고 스킵 |
 | [Platforms](Platforms.md) | Background · Dashboard에 각각 로드되는 공유 라이브러리 | 치지직/SOOP 차이를 동일 인터페이스로 흡수 |
+
+- ContentScript는 Dashboard가 만든 iframe 안에서만 동작하고 Dashboard와만 대화하므로 그 하위에 둔다. 다만 SOOP MAIN 월드 스크립트를 등록하는 쪽은 Background다.
+- Background와 Platforms는 Popup·Dashboard 양쪽이 쓰는 공유 계층이라 특정 계층의 하위에 두지 않는다.
 
 ### 의존 방향
 
