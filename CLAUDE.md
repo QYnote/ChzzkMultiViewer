@@ -37,11 +37,11 @@ README.md의 `업데이트 예정 기능`에 항목을 추가한 경우, 개발 
 
 | 문서 | 갱신해야 할 때 |
 |---|---|
-| `document/Overview.md` | 기능이 추가·제거·변경될 때, 대시보드 화면 배치가 바뀔 때 |
+| `document/Overview.md` | 기능이 추가·제거될 때 (화면별 상세는 아래 화면 문서에 적는다) |
 | `document/Architecture.md` | 계층이 추가·제거되거나 계층 간 통신 방식이 바뀔 때 |
 | `document/Popup.md` · `Dashboard.md` · `Background.md` · `ContentScript.md` · `Platforms.md` | 해당 모듈의 책임 범위나 입출력 계약이 바뀔 때 |
 | `document/Chzzk.md` · `Soop.md` | 플랫폼이 정한 주소·쿠키·화면 구조가 바뀌어 대응했을 때 |
-| `document/Flows.md` | 동작 흐름의 단계나 순서가 바뀔 때 |
+| `document/PopupScreen.md` · `DashboardScreen.md` | 사용자가 화면에서 하는 조작이 바뀔 때 |
 | `document/Build.md` | 빌드/배포 절차나 환경이 바뀔 때 |
 | `README.md` | 설치·사용 절차가 바뀌거나 하위 문서 구성이 바뀔 때 |
 
