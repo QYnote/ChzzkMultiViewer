@@ -24,4 +24,5 @@
 - Dashboard: `buildStreamUrl` / `buildChatUrl`만 사용 — 순수 URL 조립, 네트워크 없음
 - Popup은 이 계층을 로드하지 않는다. 필요하면 반드시 Background를 거친다
 
-⚠️ SOOP은 채팅 URL이 없어 `buildChatUrl`이 항상 빈 문자열을 반환한다. Dashboard는 이 빈 문자열을 채팅 미지원 신호로 사용해 채팅 패널을 강제로 숨긴다.
+**주의**
+- ⚠️ SOOP은 채팅 URL이 없어 `buildChatUrl`이 항상 빈 문자열을 반환한다. Dashboard는 이 빈 문자열을 채팅 미지원 신호로 사용해 채팅 패널을 강제로 숨긴다.

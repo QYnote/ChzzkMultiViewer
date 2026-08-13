@@ -62,7 +62,7 @@ graph LR
 | Background ↔ 브라우저 | `chrome.cookies`, `chrome.declarativeNetRequest` | 로그인 세션 쿠키 조회, iframe/API 요청에 쿠키 주입 |
 | Background → ContentScript(MAIN 월드) | `chrome.scripting.registerContentScripts` | SOOP iframe 내 로컬 앱 연결 차단 스크립트 등록 |
 
-⚠️ `chrome-extension://` 오리진에서는 SameSite=Lax 쿠키가 iframe에 자동으로 실리지 않는다. Background가 `declarativeNetRequest` 동적 규칙으로 Cookie 헤더를 직접 주입해 이를 우회한다.
+- ⚠️ `chrome-extension://` 오리진에서는 SameSite=Lax 쿠키가 iframe에 자동으로 실리지 않는다. Background가 `declarativeNetRequest` 동적 규칙으로 Cookie 헤더를 직접 주입해 이를 우회한다.
 
 ### chrome.storage.local — 공유 상태
 
