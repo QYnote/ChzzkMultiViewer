@@ -14,44 +14,52 @@ sequenceDiagram
   participant U as 사용자
   participant P as Popup
   participant BG as Background
-  participant S as chrome.storage.local
+  participant S as 브라우저 저장소
   participant D as Dashboard
 
   U->>P: 팔로잉 불러오기 또는 직접 추가
-  P->>BG: fetchFollowingList (팔로잉인 경우)
+  P->>BG: 팔로잉 목록 조회 (팔로잉인 경우)
   BG-->>P: 팔로잉 목록 응답
   U->>P: 항목 선택 → 시청 목록에 추가
-  P->>S: currentViewList 갱신
+  P->>S: 시청 목록 갱신
   U->>P: 멀티뷰 대시보드 열기
   alt 대시보드 미실행
     P->>D: 새 탭 생성
-    D->>S: currentViewList 로드 → 메인/서브 렌더링
+    D->>S: 시청 목록 읽기 → 메인/서브 화면 구성
   else 대시보드 실행 중
-    P->>D: checkReload 메시지
-    D->>S: currentViewList 재로드 → 변경분만 반영
+    P->>D: 변경 반영 요청
+    D->>S: 시청 목록 다시 읽기 → 바뀐 부분만 반영
   end
 ```
 
-### 메인 ↔ 서브 스왑
+### 메인 ↔ 서브 교체
 
 ```mermaid
 sequenceDiagram
   participant U as 사용자
   participant D as Dashboard
-  participant CSsub as ContentScript(서브였던 iframe)
-  participant CSmain as ContentScript(메인이었던 iframe)
+  participant NEW as 새 메인 (서브였던 화면)
+  participant OLD as 새 서브 (메인이었던 화면)
 
-  U->>D: 서브 타일 클릭
-  D->>D: DOM에서 두 iframe 위치만 교환 (재로드 없음)
-  D->>CSsub: postMessage chzzk-mv-retrigger-wide
-  D->>CSmain: postMessage chzzk-mv-retrigger-wide
-  D->>CSsub: postMessage chzzk-mv-audio (기존 메인 볼륨, 0.5s·1.5s 후 재전송)
-  D->>CSmain: postMessage chzzk-mv-audio volume 0
-  CSsub-->>D: chzzk-mv-wide-done
-  CSmain-->>D: chzzk-mv-wide-done
+  U->>D: 서브 화면 클릭
+  D->>D: 두 화면의 위치를 맞바꿈
+  Note over NEW,OLD: 위치를 옮기면 브라우저가 두 화면을 다시 불러온다
+  D->>OLD: 주소를 음소거로 맞춤
+  D->>D: 목표 음량 기억 (새 메인 = 기존 음소거 여부, 새 서브 = 음소거·잠금)
+  D->>NEW: 목표 음량 지시 (다시 불러오는 중이면 도달하지 못함)
+  D->>OLD: 목표 음량 지시
+  D->>NEW: 넓은 화면 전환 재시도 요청
+  D->>OLD: 넓은 화면 전환 재시도 요청
+  NEW-->>D: 준비 완료
+  D->>NEW: 기억해 둔 목표 음량 다시 지시
+  OLD-->>D: 준비 완료
+  D->>OLD: 기억해 둔 목표 음량 다시 지시
 ```
 
-- ⚠️ 스왑은 재로드 없이 DOM 위치만 바꾸는 방식이라, 와이드 화면 상태가 풀릴 수 있어 양쪽 모두 와이드 재시도를 요청한다.
+**주의**
+- ⚠️ 화면을 옮기면 브라우저가 그 안의 내용을 **다시 불러온다.** 그래서 옮긴 직후 보낸 지시는 사라질 수 있고, 다시 불러온 화면은 주소에 적힌 음소거 여부로 초기화된다. 목표 음량을 기억해 두었다가 준비 완료 소식을 받을 때마다 다시 보내는 이유다.
+- ⚠️ 다시 불러오면 넓은 화면 상태도 풀리므로 양쪽 모두 전환을 다시 요청한다.
+- ⚠️ 새 메인을 소리가 켜진 주소로 불러오면 브라우저의 자동 재생 차단에 걸릴 수 있어, 음소거로 불러온 뒤 준비 완료 시점에 해제한다.
 
 ### 초기화 안내 상태 전이
 

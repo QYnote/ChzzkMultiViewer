@@ -25,59 +25,60 @@
 
 ```mermaid
 graph LR
-  Popup -->|메시지| Background
-  Popup -->|get/set| Storage[(chrome.storage.local)]
-  Popup -.->|탭 열기·checkReload| Dashboard
+  Popup -->|요청| Background
+  Popup -->|읽기·쓰기| Storage[(브라우저 저장소)]
+  Popup -.->|탭 열기 · 변경 반영 요청| Dashboard
 
   Dashboard --> Platforms
-  Dashboard -->|메시지| Background
-  Dashboard -->|get/set + onChanged| Storage
-  Dashboard <-->|postMessage| ContentScript
+  Dashboard -->|요청| Background
+  Dashboard -->|읽기·쓰기 + 변경 감지| Storage
+  Dashboard <-->|지시 · 소식| ContentScript
 
   Background --> Platforms
-  Background -->|cookies·declarativeNetRequest| BrowserNet[(브라우저 쿠키 · 네트워크)]
-  Background -.->|scripting 등록| ContentScriptMain[ContentScript MAIN 월드]
+  Background -->|쿠키 조회 · 네트워크 규칙| BrowserNet[(브라우저 쿠키 · 네트워크)]
+  Background -.->|스크립트 등록| ContentScriptMain[SOOP 전용 스크립트]
 ```
 
-- Platforms는 Background와 Dashboard 양쪽에 각각 로드되는 공유 라이브러리로, 역방향 의존이 없다.
-- Popup은 Platforms를 로드하지 않는다. 팔로잉/생방송 상태가 필요하면 반드시 Background를 거친다.
-- ContentScript는 Background·Popup과 직접 연결되지 않고, 오직 자신을 iframe으로 담고 있는 Dashboard와만 postMessage로 통신한다.
+- Platforms는 Background와 Dashboard 양쪽에 각각 로드되는 공유 계층으로, 역방향 의존이 없다.
+- Popup은 Platforms를 로드하지 않는다. 팔로잉·생방송 상태가 필요하면 반드시 Background를 거친다.
+- ContentScript는 Background·Popup과 직접 연결되지 않고, 오직 자신을 담고 있는 Dashboard와만 대화한다.
 
 ### 통신 규칙
 
 | 구간 | 방식 | 용도 |
 |---|---|---|
-| Popup → Background | `chrome.runtime.sendMessage` | 팔로잉 목록 / 생방송 상태 / SOOP 로그인 여부 조회 |
-| Popup ↔ chrome.storage.local | get/set | 시청 목록 · 즐겨찾기 · 설정 읽기/쓰기 |
-| Popup → Dashboard 탭 | `chrome.tabs.sendMessage` (`checkReload`) | 대시보드가 이미 열려 있을 때 변경사항 반영 요청 |
-| Dashboard → Background | `chrome.runtime.sendMessage` | 생방송 상태 · 프로필 사진 조회 |
-| Dashboard ↔ chrome.storage.local | get/set + `onChanged` | 시청 목록 · 레이아웃 읽기, 설정 변경 실시간 반영 |
-| Dashboard ↔ ContentScript(iframe) | `postMessage` | 볼륨 제어, 딜레이 · 광고 상태 수신, 와이드 모드 재시도 요청 |
-| Background ↔ 브라우저 | `chrome.cookies`, `chrome.declarativeNetRequest` | 로그인 세션 쿠키 조회, iframe/API 요청에 쿠키 주입 |
-| Background → ContentScript(MAIN 월드) | `chrome.scripting.registerContentScripts` | SOOP iframe 내 로컬 앱 연결 차단 스크립트 등록 |
+| Popup → Background | 요청·응답 | 팔로잉 목록 · 생방송 상태 · SOOP 로그인 여부 조회 |
+| Popup ↔ 브라우저 저장소 | 읽기·쓰기 | 시청 목록 · 즐겨찾기 · 설정 |
+| Popup → Dashboard 탭 | 요청 | 대시보드가 이미 열려 있을 때 변경사항 반영 |
+| Dashboard → Background | 요청·응답 | 생방송 상태 · 프로필 사진 조회 |
+| Dashboard ↔ 브라우저 저장소 | 읽기·쓰기 + 변경 감지 | 시청 목록·배치 읽기, 설정 변경 실시간 반영 |
+| Dashboard ↔ 방송 화면 | 지시·소식 | 음량 제어, 딜레이·광고 상태 수신, 넓은 화면 재시도 요청 |
+| Background ↔ 브라우저 | 쿠키 조회 · 네트워크 규칙 | 로그인 쿠키를 읽어 방송 화면·조회 요청에 실어 보냄 |
+| Background → SOOP 전용 스크립트 | 스크립트 등록 | SOOP 방송 화면의 로컬 앱 연결 차단 |
 
-- ⚠️ `chrome-extension://` 오리진에서는 SameSite=Lax 쿠키가 iframe에 자동으로 실리지 않는다. Background가 `declarativeNetRequest` 동적 규칙으로 Cookie 헤더를 직접 주입해 이를 우회한다.
+**주의**
+- ⚠️ 브라우저는 확장 프로그램이 만든 화면에 로그인 쿠키를 자동으로 실어 주지 않는다. Background가 네트워크 규칙으로 직접 실어 보내 이를 우회한다.
 
-### chrome.storage.local — 공유 상태
+### 공유 상태
 
-Popup과 Dashboard가 직접 연결되어 있지 않을 때도 아래 키를 매개로 상태를 공유한다.
+Popup과 Dashboard가 직접 연결되어 있지 않을 때도 브라우저 저장소를 매개로 상태를 공유한다.
 
-| 키 | 내용 | 주로 쓰는 쪽 |
+| 저장하는 것 | 내용 | 주로 쓰는 쪽 |
 |---|---|---|
-| `currentViewList` | 시청 목록 배열, 0번 인덱스 = 메인 | Popup(읽기·쓰기) · Dashboard(읽기 + 스왑·서브 순서 변경·삭제 시 쓰기) |
-| `favoriteTree` | 즐겨찾기 폴더 트리 | Popup |
-| `favoriteMasterList` | 구 형식 즐겨찾기 목록. `favoriteTree`가 없을 때만 읽어 트리로 변환·저장하는 이관용 키 | Popup(읽기) |
-| `systemSettings` | 자동 동기화 여부·기준 시간·프로필 표시 방식. 읽을 때 구 형식 프로필 표시값을 현재 4종 체계로 변환한다 | Popup(쓰기) · Dashboard(읽기, `onChanged`로 실시간 반영) |
-| `dashboardLayout` | 레이아웃 번호(1~4) | Popup(쓰기) · Dashboard(읽기) |
-| `dashboardChatHidden` / `subPanelCollapsed` / `subPanelHeight` | 채팅·서브 패널 UI 상태 | Dashboard |
+| 시청 목록 | 시청 중인 채널 순서. **맨 앞이 메인** | Popup(읽기·쓰기) · Dashboard(읽기 + 교체·순서 변경·삭제 시 쓰기) |
+| 즐겨찾기 트리 | 폴더 구조로 보관한 채널 | Popup |
+| 구 형식 즐겨찾기 | 예전 버전이 남긴 목록. 트리가 없을 때만 읽어 트리로 옮긴다 | Popup(읽기) |
+| 시스템 설정 | 자동 동기화 여부·기준 시간·서브 정보 표시 방식. 읽을 때 예전 형식 값을 현재 체계로 바꾼다 | Popup(쓰기) · Dashboard(읽기, 변경 시 실시간 반영) |
+| 대시보드 배치 | 선택한 배치 종류 | Popup(쓰기) · Dashboard(읽기) |
+| 화면 상태 | 채팅 숨김 여부, 서브 영역 접힘·높이 | Dashboard |
 
 ### 기술 스택
 
-- Chrome Extension Manifest V3
+- Chrome 확장 프로그램 (Manifest V3)
 - 순수 JS — 프레임워크·번들러 없음
-- `declarativeNetRequest` — SameSite=Lax 쿠키 우회 및 헤더 변조
-- `chrome.storage.local` — 시청 목록 / 즐겨찾기 / 설정 영구 저장
-- `postMessage` 양방향 통신 — Dashboard ↔ ContentScript(iframe) 볼륨 제어
+- 네트워크 규칙 변조 — 확장 프로그램 화면에 로그인 쿠키를 실어 보내기 위해
+- 브라우저 저장소 — 시청 목록 / 즐겨찾기 / 설정 영구 보관
+- 화면 간 메시지 — 대시보드와 방송 화면 사이 음량 제어·상태 수신
 
 ### 참고: 구현 파일 위치
 
