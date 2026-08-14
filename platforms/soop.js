@@ -16,12 +16,8 @@ const SoopAdapter = {
     return { success: true, data };
   },
 
-  buildStreamUrl(channelId, muted) {
-    return `https://play.sooplive.com/${channelId}?mv_ext=1${muted ? '&mute=1' : ''}`;
-  },
-
-  buildChatUrl(channelId) {
-    return '';
+  buildStreamUrl(channelId) {
+    return `https://play.sooplive.com/${channelId}?mv_ext=1`;
   },
 
   async fetchLiveStatus(channelId) {

@@ -10,84 +10,58 @@ function setMiniButtonStyle(btn, bgColor) {
   btn.style.width = 'auto';
 }
 
-// ── 시청 목록 드래그 상태 (메인 화면 고정 박스 / 서브 목록 재정렬 공용) ──
-let wlDragIndex = null;
+// ── 시청 목록 렌더링 ──
+// 모든 채널이 동등하고 화면상의 자리는 대시보드가 기억한다. 그래서 이 목록에는
+// 순서라는 개념이 없다. 어떤 채널을 띄울지만 정하는 자리다.
+// 채널이 많으면 동시에 받는 영상이 늘어 회선이 감당하지 못할 수 있다.
+// 막지는 않고 안내만 띄운다. 몇 개까지 괜찮은지는 회선마다 다르기 때문이다.
+// 이 수부터 안내를 보여준다.
+const BUFFER_WARN_COUNT = 6;
 
-// ── 메인 화면 고정 박스 드롭 이벤트 (재렌더링과 무관하게 최초 1회만 등록) ──
-if (mainScreenSlotDiv) {
-  mainScreenSlotDiv.addEventListener('dragover', (e) => {
-    if (wlDragIndex === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    mainScreenSlotDiv.classList.add('drag-over');
-  });
-  mainScreenSlotDiv.addEventListener('dragleave', () => mainScreenSlotDiv.classList.remove('drag-over'));
-  mainScreenSlotDiv.addEventListener('drop', (e) => {
-    e.preventDefault();
-    mainScreenSlotDiv.classList.remove('drag-over');
-    if (wlDragIndex === null) return;
-    setAsMain(wlDragIndex);
-    wlDragIndex = null;
-  });
-}
-
-// ── 시청 목록: 메인 화면 고정 박스 / 서브 목록 분리 렌더링 ──
 function renderWatchlist(container, list, favoriteList) {
   if (!container) return;
   container.innerHTML = '';
-  if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '';
+
+  if (bufferNoticeEl) {
+    bufferNoticeEl.style.display = list.length >= BUFFER_WARN_COUNT ? 'block' : 'none';
+  }
 
   if (list.length === 0) {
     container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 시청 스트리머가 없습니다.</p>';
-    if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '<p style="color:#999; text-align:center; margin:4px 0; font-size:11px;">메인 채널 없음</p>';
     return;
   }
 
-  // 메인 화면 (0번) — 고정 박스, 드롭 시 setAsMain 교체
-  if (mainScreenSlotDiv) {
-    mainScreenSlotDiv.appendChild(buildStreamerItem(list[0], 0, list, favoriteList));
-  }
-
-  // 서브 채널 (1번~) — 드래그 재정렬 가능
-  const subList = list.slice(1);
-  if (subList.length === 0) {
-    container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 서브 채널이 없습니다.</p>';
-    return;
-  }
-
-  subList.forEach((streamer, subIdx) => {
-    const index = subIdx + 1;
-    const itemDiv = buildStreamerItem(streamer, index, list, favoriteList);
-    itemDiv.draggable = true;
-    itemDiv.style.cursor = 'grab';
-
-    itemDiv.addEventListener('dragstart', (e) => {
-      wlDragIndex = index;
-      setTimeout(() => { itemDiv.style.opacity = '0.4'; }, 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    itemDiv.addEventListener('dragend', () => {
-      wlDragIndex = null;
-      itemDiv.style.opacity = '';
-      clearInsertLine(itemDiv);
-    });
-    itemDiv.addEventListener('dragover', (e) => {
-      if (wlDragIndex === null || wlDragIndex === index) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setInsertLine(itemDiv, getDropPos(e, itemDiv));
-    });
-    itemDiv.addEventListener('dragleave', () => clearInsertLine(itemDiv));
-    itemDiv.addEventListener('drop', (e) => {
-      e.preventDefault();
-      clearInsertLine(itemDiv);
-      if (wlDragIndex === null || wlDragIndex === index) return;
-      reorderWatchlist(wlDragIndex, streamer.channelId, getDropPos(e, itemDiv));
-      wlDragIndex = null;
-    });
-
-    container.appendChild(itemDiv);
+  list.forEach((streamer, index) => {
+    container.appendChild(buildStreamerItem(streamer, index, list, favoriteList));
   });
+}
+
+// ── 생방송 여부 배지 ──
+// 조회는 시간이 걸리므로 자리만 잡아 두고 답이 오면 그때 채운다.
+// 답이 오지 않거나 알 수 없으면 감춘 채로 둔다.
+function createLiveBadge(channelId, platform) {
+  const badge = document.createElement('span');
+  badge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
+  badge.textContent = 'OFF';
+
+  chrome.runtime.sendMessage(
+    { action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' },
+    (response) => {
+      if (chrome.runtime.lastError || !response?.success || response.openLive == null) return;
+      badge.style.visibility = 'visible';
+      if (response.openLive) {
+        badge.textContent = 'LIVE';
+        badge.style.background = '#e50914';
+        badge.style.color = '#fff';
+      } else {
+        badge.textContent = 'OFF';
+        badge.style.background = '#e1e4e6';
+        badge.style.color = '#767c82';
+      }
+    }
+  );
+
+  return badge;
 }
 
 // ── 시청 목록 항목 DOM 생성 ──
@@ -111,8 +85,11 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   iconEl.alt = '';
   textSpan.appendChild(iconEl);
 
+  textSpan.appendChild(createLiveBadge(streamer.channelId, streamer.platform));
+
   const nameStrong = document.createElement('strong');
   nameStrong.textContent = streamer.name;
+  nameStrong.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
   textSpan.appendChild(nameStrong);
 
   itemDiv.appendChild(textSpan);
@@ -121,33 +98,23 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   actionGroup.style.display = 'flex';
   actionGroup.style.gap = '4px';
 
-  // ▲▼ 세로 그룹
-  const hasUp   = index > 1;
-  const hasDown = index > 0 && index !== list.length - 1;
-  const bothArrows = hasUp && hasDown;
-
-  const arrowGroup = document.createElement('div');
-  arrowGroup.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
-
-  if (hasUp) {
-    const btnUp = document.createElement('button');
-    btnUp.textContent = '▲';
-    setMiniButtonStyle(btnUp, '#868e96');
-    btnUp.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-    if (bothArrows) btnUp.style.fontSize = '10px';
-    btnUp.addEventListener('click', () => moveStreamer(index, -1));
-    arrowGroup.appendChild(btnUp);
+  // ★ 즐겨찾기 — 등록만 되고 해제는 되지 않는다.
+  // 이미 등록된 항목은 노란 별로 표시만 하고 잠근다. 해제는 즐겨찾기 목록에서 한다.
+  const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
+  const btnFav = document.createElement('button');
+  btnFav.textContent = inFav ? '★' : '☆';
+  btnFav.title = inFav ? '즐겨찾기에 있습니다 (해제는 즐겨찾기 목록에서)' : '즐겨찾기 추가';
+  setMiniButtonStyle(btnFav, inFav ? '#e6a817' : '#bbb');
+  btnFav.disabled = inFav;
+  btnFav.style.padding = '3px 0';
+  btnFav.style.width = '24px';
+  if (!inFav) {
+    btnFav.addEventListener('click', (e) => {
+      e.stopPropagation();
+      addToFavorite(streamer);
+    });
   }
-  if (hasDown) {
-    const btnDown = document.createElement('button');
-    btnDown.textContent = '▼';
-    setMiniButtonStyle(btnDown, '#868e96');
-    btnDown.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-    if (bothArrows) btnDown.style.fontSize = '10px';
-    btnDown.addEventListener('click', () => moveStreamer(index, 1));
-    arrowGroup.appendChild(btnDown);
-  }
-  if (arrowGroup.children.length > 0) actionGroup.appendChild(arrowGroup);
+  actionGroup.appendChild(btnFav);
 
   // X 버튼
   const btnDel = document.createElement('button');
@@ -155,63 +122,6 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   setMiniButtonStyle(btnDel, '#dc3545');
   btnDel.addEventListener('click', () => deleteStreamer('current', index));
   actionGroup.appendChild(btnDel);
-
-  // ⋯ 더보기 버튼
-  const btnMore = document.createElement('button');
-  btnMore.textContent = '⋯';
-  setMiniButtonStyle(btnMore, '#868e96');
-
-  btnMore.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.querySelectorAll('.watchlist-more-menu').forEach(m => m.remove());
-
-    const menu = document.createElement('div');
-    menu.className = 'watchlist-more-menu';
-    menu.style.cssText = 'position:fixed; background:#fff; border:1px solid #ddd; border-radius:4px; box-shadow:0 2px 8px rgba(0,0,0,0.15); z-index:1000; min-width:130px; overflow:hidden;';
-
-    const menuItemBase = 'padding:7px 12px; font-size:11px; white-space:nowrap;';
-
-    // ▶ 메인으로 지정
-    const itemMain = document.createElement('div');
-    itemMain.style.cssText = menuItemBase + (index === 0 ? 'color:#ccc; cursor:default;' : 'color:#333; cursor:pointer;');
-    itemMain.textContent = '▶ 메인으로 지정';
-    if (index !== 0) {
-      itemMain.addEventListener('mouseenter', () => itemMain.style.background = '#f5f5f5');
-      itemMain.addEventListener('mouseleave', () => itemMain.style.background = '');
-      itemMain.addEventListener('click', (e) => { e.stopPropagation(); setAsMain(index); menu.remove(); });
-    }
-
-    menu.appendChild(itemMain);
-
-    // ☆ 즐겨찾기 추가 (이미 등록된 항목은 표시 안 함)
-    const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
-    if (!inFav) {
-      const itemFav = document.createElement('div');
-      itemFav.style.cssText = menuItemBase + 'color:#333; cursor:pointer;';
-      itemFav.textContent = '☆ 즐겨찾기 추가';
-      itemFav.addEventListener('mouseenter', () => itemFav.style.background = '#f5f5f5');
-      itemFav.addEventListener('mouseleave', () => itemFav.style.background = '');
-      itemFav.addEventListener('click', (e) => { e.stopPropagation(); addToFavorite(streamer); menu.remove(); });
-      menu.appendChild(itemFav);
-    }
-
-    document.body.appendChild(menu);
-
-    // 버튼 기준으로 위치 결정 (뷰포트 아래 잘리면 위로 뒤집기)
-    const btnRect = btnMore.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight;
-    const top = (btnRect.bottom + menuHeight > window.innerHeight)
-      ? btnRect.top - menuHeight - 2
-      : btnRect.bottom + 2;
-    menu.style.top  = top + 'px';
-    menu.style.left = (btnRect.right - menu.offsetWidth) + 'px';
-
-    setTimeout(() => {
-      document.addEventListener('click', () => menu.remove(), { once: true });
-    }, 0);
-  });
-
-  actionGroup.appendChild(btnMore);
 
   itemDiv.appendChild(actionGroup);
   return itemDiv;

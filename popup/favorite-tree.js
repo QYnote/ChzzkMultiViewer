@@ -158,7 +158,7 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
     const toIdx = folder.items.findIndex(i => i.channelId === item.channelId);
     folder.items.splice(pos === 'before' ? toIdx : toIdx + 1, 0, moved);
     dragState = null;
-    saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+    saveAndRefreshFavorites(tree, container, currentList);
   });
 
   const left = document.createElement('div');
@@ -216,7 +216,7 @@ function createFavoriteItemRow(item, folderId, depth, tree, container, currentLi
   btnDel.style.padding = '2px 6px';
   btnDel.addEventListener('click', () => {
     removeItemFromTree(tree, item.channelId);
-    saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+    saveAndRefreshFavorites(tree, container, currentList);
   });
 
   btnGroup.appendChild(btnCopy);
@@ -300,7 +300,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         if (!target.items) target.items = [];
         target.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
         dragState = null;
-        saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+        saveAndRefreshFavorites(tree, container, currentList);
 
       } else if (dragState.type === 'folder' && dragState.folderId !== folder.id) {
         // 폴더 재정렬
@@ -315,7 +315,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
         if (toIdx === -1) { parent.folders.push(moved); }
         else { parent.folders.splice(pos === 'before' ? toIdx : toIdx + 1, 0, moved); }
         dragState = null;
-        saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+        saveAndRefreshFavorites(tree, container, currentList);
       }
     });
 
@@ -326,7 +326,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
     arrow.addEventListener('click', (e) => {
       e.stopPropagation();
       folder.collapsed = !folder.collapsed;
-      saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+      saveAndRefreshFavorites(tree, container, currentList);
     });
 
     // 폴더명 (3번 클릭 시 이름 변경)
@@ -366,7 +366,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!parent) return;
       if (!parent.folders) parent.folders = [];
       parent.folders.push({ id: generateFolderId(), name: '새 폴더', items: [], folders: [], collapsed: false });
-      saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+      saveAndRefreshFavorites(tree, container, currentList);
     });
 
     const btnDel = document.createElement('button');
@@ -381,7 +381,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       const hasContent = (folder.items || []).length > 0 || (folder.folders || []).length > 0;
       if (hasContent && !confirm(`"${folder.name}" 폴더 안의 모든 항목이 함께 삭제됩니다.\n계속하시겠습니까?`)) return;
       removeFolderFromTree(tree, folder.id);
-      saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+      saveAndRefreshFavorites(tree, container, currentList);
     });
 
     header.appendChild(arrow);
@@ -427,7 +427,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
       if (!tree.items) tree.items = [];
       tree.items.push({ channelId: dragState.channelId, name: dragState.name, platform: dragState.platform });
       dragState = null;
-      saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+      saveAndRefreshFavorites(tree, container, currentList);
     });
 
     const btnAdd = document.createElement('button');
@@ -439,7 +439,7 @@ function renderFolderNode(container, folder, depth, tree, currentList, isRoot) {
     btnAdd.addEventListener('click', () => {
       if (!tree.folders) tree.folders = [];
       tree.folders.push({ id: generateFolderId(), name: '새 폴더', items: [], folders: [], collapsed: false });
-      saveFavoriteTree(tree, () => renderFavoriteTree(container, tree, currentList));
+      saveAndRefreshFavorites(tree, container, currentList);
     });
     addRow.appendChild(btnAdd);
     container.appendChild(addRow);
@@ -451,4 +451,15 @@ function renderFavoriteTree(container, tree, currentList) {
   if (!container) return;
   container.innerHTML = '';
   renderFolderNode(container, tree, 0, tree, currentList, true);
+}
+
+// ── 즐겨찾기를 바꾼 뒤 저장하고 양쪽 목록을 다시 그리기 ──
+// 즐겨찾기 목록만 다시 그리면, 왼쪽 시청 목록의 별 표시가 옛 상태에 머문다.
+// 즐겨찾기에서 지운 채널이 시청 목록에서는 계속 등록된 것처럼 보이던 문제다.
+function saveAndRefreshFavorites(tree, container, currentList) {
+  saveFavoriteTree(tree, () => {
+    renderFavoriteTree(container, tree, currentList);
+    const favIds = [...collectAllChannelIds(tree)].map(id => ({ channelId: id }));
+    renderWatchlist(currentViewListDiv, currentList, favIds);
+  });
 }

@@ -13,14 +13,6 @@ function initSettingsEvents() {
   const versionEl = document.getElementById('version-display');
   if (versionEl) versionEl.textContent = 'v' + chrome.runtime.getManifest().version;
 
-  document.querySelectorAll('.layout-opt').forEach(opt => {
-    opt.addEventListener('click', () => {
-      document.querySelectorAll('.layout-opt').forEach(o => o.classList.remove('active'));
-      opt.classList.add('active');
-      chrome.storage.local.set({ dashboardLayout: parseInt(opt.dataset.layout) });
-    });
-  });
-
   if (chkAutoSync) chkAutoSync.addEventListener('change', saveSettings);
   if (numLimitSeconds) numLimitSeconds.addEventListener('input', saveSettings);
   if (selProfileDisplay) selProfileDisplay.addEventListener('change', saveSettings);

@@ -15,12 +15,8 @@ const ChzzkAdapter = {
     return { success: true, data };
   },
 
-  buildStreamUrl(channelId, muted) {
-    return `https://chzzk.naver.com/live/${channelId}?${muted ? 'mute=1&' : ''}mv_ext=1`;
-  },
-
-  buildChatUrl(channelId) {
-    return `https://chzzk.naver.com/live/${channelId}/chat`;
+  buildStreamUrl(channelId) {
+    return `https://chzzk.naver.com/live/${channelId}?mv_ext=1`;
   },
 
   async fetchLiveStatus(channelId) {

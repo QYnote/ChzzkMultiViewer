@@ -150,6 +150,19 @@
       margin: 0 0 4px;
       padding-left: 2px;
     }
+
+    /* 채널이 많을 때만 목록 위에 나타나는 안내 */
+    .buffer-notice {
+      display: none;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #8a6d3b;
+      background: #fcf8e3;
+      border: 1px solid #faebcc;
+      border-radius: 4px;
+      padding: 4px 6px;
+      margin: 0 0 4px;
+    }
     .list-container {
       background: #fff;
       border: 1px solid var(--clr-border);
@@ -159,20 +172,6 @@
       padding: 4px;
     }
     #current-view-list { height: 340px; }
-
-    /* 메인 화면 고정 박스 */
-    .main-screen-slot {
-      background: #fff;
-      border: 1px solid var(--clr-border);
-      border-radius: 6px;
-      padding: 4px;
-      margin-bottom: 6px;
-      min-height: 28px;
-    }
-    .main-screen-slot.drag-over {
-      background: var(--clr-light);
-      outline: 1px dashed var(--clr-dark);
-    }
 
     /* 입력 폼 */
     .input-group { margin-bottom: 8px; }
@@ -272,23 +271,6 @@
       margin: 0 0 10px;
     }
 
-    /* 레이아웃 그리드 */
-    .layout-grid { display: flex; gap: 8px; flex-wrap: nowrap; }
-    .layout-opt {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      padding: 6px 8px;
-      border: 2px solid var(--clr-border);
-      border-radius: 6px;
-      transition: border-color 0.1s, background 0.1s;
-      background: #fff;
-    }
-    .layout-opt:hover { border-color: var(--clr-dark); background: var(--clr-light); }
-    .layout-opt.active { border-color: var(--clr-dark); background: var(--clr-light); }
-    .layout-opt span { font-size: 9px; margin-top: 3px; color: var(--clr-text-sub); }
-
     /* 자동 동기화 */
     .sync-row {
       display: flex;
@@ -374,8 +356,7 @@
       <div class="watch-columns">
         <div class="watch-column">
           <p class="column-title">멀티뷰 표시 목록</p>
-          <p class="column-title" style="font-size:10px; color:var(--clr-text-sub); margin-top:0;">📌 메인 화면</p>
-          <div class="main-screen-slot" id="main-screen-slot"></div>
+          <p class="buffer-notice" id="buffer-notice">⚠️ 채널이 많아 네트워크 환경에 따라 버퍼링이 생길 수 있습니다.</p>
           <div class="list-container" id="current-view-list">
             <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 스트리머가 없습니다.</p>
           </div>
@@ -459,70 +440,6 @@
           <option value="hover-profile">마우스 올릴 때 (프로필 사진)</option>
           <option value="hover-name">마우스 올릴 때 (채널 이름)</option>
         </select>
-      </div>
-    </div>
-
-    <!-- 대시보드 레이아웃 -->
-    <div class="settings-section">
-      <h3 class="settings-title">대시보드 레이아웃</h3>
-      <div class="layout-grid">
-
-        <div class="layout-opt" data-layout="1" title="기본형">
-          <div style="display:flex;gap:2px;width:72px;height:44px;">
-            <div style="width:14px;background:var(--clr-base);border-radius:2px;display:flex;flex-direction:column;gap:2px;padding:2px;">
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-            </div>
-            <div style="flex:1;background:var(--clr-dark);border-radius:2px;"></div>
-            <div style="width:14px;background:var(--clr-base);border-radius:2px;"></div>
-          </div>
-          <span>기본형</span>
-        </div>
-
-        <div class="layout-opt" data-layout="2" title="반전형">
-          <div style="display:flex;gap:2px;width:72px;height:44px;">
-            <div style="width:14px;background:var(--clr-base);border-radius:2px;"></div>
-            <div style="flex:1;background:var(--clr-dark);border-radius:2px;"></div>
-            <div style="width:14px;background:var(--clr-base);border-radius:2px;display:flex;flex-direction:column;gap:2px;padding:2px;">
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-              <div style="height:11px;background:var(--clr-light);border-radius:1px;"></div>
-            </div>
-          </div>
-          <span>반전형</span>
-        </div>
-
-        <div class="layout-opt" data-layout="3" title="서브하단">
-          <div style="display:flex;flex-direction:column;gap:2px;width:72px;height:44px;">
-            <div style="flex:1;display:flex;gap:2px;">
-              <div style="flex:1;background:var(--clr-dark);border-radius:2px;"></div>
-              <div style="width:14px;background:var(--clr-base);border-radius:2px;"></div>
-            </div>
-            <div style="height:11px;display:flex;gap:2px;">
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-            </div>
-          </div>
-          <span>서브하단</span>
-        </div>
-
-        <div class="layout-opt" data-layout="4" title="서브상단">
-          <div style="display:flex;flex-direction:column;gap:2px;width:72px;height:44px;">
-            <div style="height:11px;display:flex;gap:2px;">
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-              <div style="flex:1;background:var(--clr-base);border-radius:2px;"></div>
-            </div>
-            <div style="flex:1;display:flex;gap:2px;">
-              <div style="flex:1;background:var(--clr-dark);border-radius:2px;"></div>
-              <div style="width:14px;background:var(--clr-base);border-radius:2px;"></div>
-            </div>
-          </div>
-          <span>서브상단</span>
-        </div>
-
       </div>
     </div>
 
