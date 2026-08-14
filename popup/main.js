@@ -2,7 +2,6 @@
 var tabButtons             = document.querySelectorAll('.tab-btn');
 var tabContents            = document.querySelectorAll('.tab-content');
 var currentViewListDiv     = document.getElementById('current-view-list');
-var mainScreenSlotDiv      = document.getElementById('main-screen-slot');
 var btnOpenDashboard       = document.getElementById('btn-open-dashboard');
 var favoriteMasterListDiv  = document.getElementById('favorite-master-list');
 var inputChannelId         = document.getElementById('input-channel-id');
