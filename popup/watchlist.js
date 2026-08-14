@@ -13,9 +13,18 @@ function setMiniButtonStyle(btn, bgColor) {
 // ── 시청 목록 렌더링 ──
 // 모든 채널이 동등하고 화면상의 자리는 대시보드가 기억한다. 그래서 이 목록에는
 // 순서라는 개념이 없다. 어떤 채널을 띄울지만 정하는 자리다.
+// 채널이 많으면 동시에 받는 영상이 늘어 회선이 감당하지 못할 수 있다.
+// 막지는 않고 안내만 띄운다. 몇 개까지 괜찮은지는 회선마다 다르기 때문이다.
+// 이 수부터 안내를 보여준다.
+const BUFFER_WARN_COUNT = 6;
+
 function renderWatchlist(container, list, favoriteList) {
   if (!container) return;
   container.innerHTML = '';
+
+  if (bufferNoticeEl) {
+    bufferNoticeEl.style.display = list.length >= BUFFER_WARN_COUNT ? 'block' : 'none';
+  }
 
   if (list.length === 0) {
     container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 시청 스트리머가 없습니다.</p>';

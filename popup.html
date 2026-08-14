@@ -150,6 +150,19 @@
       margin: 0 0 4px;
       padding-left: 2px;
     }
+
+    /* 채널이 많을 때만 목록 위에 나타나는 안내 */
+    .buffer-notice {
+      display: none;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #8a6d3b;
+      background: #fcf8e3;
+      border: 1px solid #faebcc;
+      border-radius: 4px;
+      padding: 4px 6px;
+      margin: 0 0 4px;
+    }
     .list-container {
       background: #fff;
       border: 1px solid var(--clr-border);
@@ -343,6 +356,7 @@
       <div class="watch-columns">
         <div class="watch-column">
           <p class="column-title">멀티뷰 표시 목록</p>
+          <p class="buffer-notice" id="buffer-notice">⚠️ 채널이 많아 네트워크 환경에 따라 버퍼링이 생길 수 있습니다.</p>
           <div class="list-container" id="current-view-list">
             <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 스트리머가 없습니다.</p>
           </div>
