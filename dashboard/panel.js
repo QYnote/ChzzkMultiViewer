@@ -6,6 +6,11 @@
 // 원래 가진 음량 조절을 쓴다. 우리가 따로 조절하면 방송 페이지가 기억하는 값과
 // 어긋나 다음에 열 때 엉뚱한 음량으로 시작한다.
 
+// SOOP 방송 페이지가 온전히 그려지는 최소 너비.
+// 칸이 이보다 좁으면 이 너비로 그린 뒤 줄여서 끼운다.
+// 올리면 좁은 칸에서 글씨가 작아지고, 내리면 페이지가 깨질 수 있다.
+const SOOP_MIN_PAGE_WIDTH = 640;
+
 function createCellOverlay(streamer, iframe, box) {
   const overlay = document.createElement('div');
   overlay.className = 'cell-overlay';
@@ -71,78 +76,100 @@ function createCellOverlay(streamer, iframe, box) {
   box.appendChild(toolbar);
   box.appendChild(menu);
 
-  // ── 영역 확대 ──
-  let isZoomed = false;
-  let zoomRegion = null;
-  let zoomResizeObserver = null;
+  // ── 방송 화면 크기와 영역 확대 ──
+  //
+  // 방송 화면은 기본적으로 칸과 같은 크기로 그린다. 다만 SOOP 방송 페이지는 폭이
+  // 좁아지면 화면이 잘리고 왼쪽에 여백이 생긴다. 그래서 좁을 때는 페이지를 넉넉한
+  // 너비로 그린 뒤 칸 크기에 맞춰 줄여서 끼운다. 높이는 칸의 가로세로 비율을 그대로
+  // 따라가므로 찌그러지지 않는다.
+  //
+  // 확대와 이 축소는 같은 변형을 쓰므로 한곳에서 계산한다. 확대 중이면 확대가 이긴다.
 
-  function applyZoomTransform(tw, th) {
-    const rx = zoomRegion.rxPct * tw;
-    const ry = zoomRegion.ryPct * th;
-    const rw = zoomRegion.rwPct * tw;
-    const rh = zoomRegion.rhPct * th;
-    const s = Math.min(tw / rw, th / rh);
-    const offsetX = (tw - rw * s) / 2;
-    const offsetY = (th - rh * s) / 2;
-    iframe.style.transformOrigin = '0 0';
-    iframe.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${s}) translate(${-rx}px,${-ry}px)`;
+  let isZoomed = false;
+  let zoomRegion = null;          // 페이지 좌표 기준 비율 (칸 기준이 아니다)
+  let viewOffsetX = 0;            // 지금 화면에 적용 중인 변형
+  let viewOffsetY = 0;
+  let viewScale = 1;
+
+  // 방송 페이지를 어느 너비로 그릴지
+  function getPageWidth(boxWidth) {
+    if (box.dataset.platform === 'soop' && boxWidth < SOOP_MIN_PAGE_WIDTH) {
+      return SOOP_MIN_PAGE_WIDTH;
+    }
+    return boxWidth;
   }
 
-  // boxDx/boxDy/boxDw/boxDh: 드래그로 고른 좌표 (항상 칸 픽셀 기준)
-  // 이미 확대 중이면 현재 변환의 역계산으로 원본 화면 좌표에 맞춘다.
-  function applyZoom(boxDx, boxDy, boxDw, boxDh) {
-    const tw = box.clientWidth;
-    const th = box.clientHeight;
+  function applyFrameLayout() {
+    const bw = box.clientWidth;
+    const bh = box.clientHeight;
+    if (bw <= 0 || bh <= 0) return;
 
-    let frameRx, frameRy, frameRw, frameRh;
+    const pw = getPageWidth(bw);
+    const fitScale = bw / pw;
+    const ph = bh / fitScale;     // 칸의 가로세로 비율 유지
+
+    iframe.style.width  = pw + 'px';
+    iframe.style.height = ph + 'px';
+    iframe.style.transformOrigin = '0 0';
 
     if (isZoomed && zoomRegion) {
-      const origRx = zoomRegion.rxPct * tw;
-      const origRy = zoomRegion.ryPct * th;
-      const origRw = zoomRegion.rwPct * tw;
-      const origRh = zoomRegion.rhPct * th;
-      const s = Math.min(tw / origRw, th / origRh);
-      const offsetX = (tw - origRw * s) / 2;
-      const offsetY = (th - origRh * s) / 2;
-
-      function boxToFrame(px, py) {
-        return { x: (px - offsetX) / s + origRx, y: (py - offsetY) / s + origRy };
-      }
-      const p1 = boxToFrame(boxDx, boxDy);
-      const p2 = boxToFrame(boxDx + boxDw, boxDy + boxDh);
-
-      frameRx = Math.min(p1.x, p2.x);
-      frameRy = Math.min(p1.y, p2.y);
-      frameRw = Math.abs(p1.x - p2.x);
-      frameRh = Math.abs(p1.y - p2.y);
+      // 확대 우선 — 고른 영역이 칸을 꽉 채우도록 맞춘다
+      const rx = zoomRegion.rxPct * pw;
+      const ry = zoomRegion.ryPct * ph;
+      const rw = zoomRegion.rwPct * pw;
+      const rh = zoomRegion.rhPct * ph;
+      viewScale   = Math.min(bw / rw, bh / rh);
+      viewOffsetX = (bw - rw * viewScale) / 2;
+      viewOffsetY = (bh - rh * viewScale) / 2;
+      iframe.style.transform =
+        `translate(${viewOffsetX}px,${viewOffsetY}px) scale(${viewScale}) translate(${-rx}px,${-ry}px)`;
     } else {
-      frameRx = boxDx;
-      frameRy = boxDy;
-      frameRw = boxDw;
-      frameRh = boxDh;
+      viewScale   = fitScale;
+      viewOffsetX = 0;
+      viewOffsetY = 0;
+      iframe.style.transform = fitScale === 1 ? '' : `scale(${fitScale})`;
     }
+  }
 
-    zoomRegion = { rxPct: frameRx / tw, ryPct: frameRy / th, rwPct: frameRw / tw, rhPct: frameRh / th };
-    applyZoomTransform(tw, th);
+  // 눈에 보이는 칸 좌표 → 방송 페이지 좌표
+  function boxToPage(px, py) {
+    return { x: (px - viewOffsetX) / viewScale, y: (py - viewOffsetY) / viewScale };
+  }
+
+  // 드래그로 고른 영역(칸 픽셀 기준)을 페이지 좌표로 되돌려 기억한다.
+  // 줄여 놓은 상태에서 골라도, 이미 확대 중인 상태에서 더 골라도 같은 방식으로 맞는다.
+  function applyZoom(boxDx, boxDy, boxDw, boxDh) {
+    const bw = box.clientWidth;
+    const bh = box.clientHeight;
+    if (bw <= 0 || bh <= 0) return;
+
+    const pw = getPageWidth(bw);
+    const ph = bh / (bw / pw);
+
+    const p1 = boxToPage(boxDx, boxDy);
+    const p2 = boxToPage(boxDx + boxDw, boxDy + boxDh);
+
+    zoomRegion = {
+      rxPct: Math.min(p1.x, p2.x) / pw,
+      ryPct: Math.min(p1.y, p2.y) / ph,
+      rwPct: Math.abs(p2.x - p1.x) / pw,
+      rhPct: Math.abs(p2.y - p1.y) / ph
+    };
     isZoomed = true;
     itemZoomReset.style.display = '';
-
-    if (!zoomResizeObserver) {
-      zoomResizeObserver = new ResizeObserver(() => {
-        if (isZoomed && zoomRegion) applyZoomTransform(box.clientWidth, box.clientHeight);
-      });
-      zoomResizeObserver.observe(box);
-    }
+    applyFrameLayout();
   }
 
   function resetZoom() {
-    iframe.style.transform = '';
-    iframe.style.transformOrigin = '';
     isZoomed = false;
     zoomRegion = null;
-    if (zoomResizeObserver) { zoomResizeObserver.disconnect(); zoomResizeObserver = null; }
     itemZoomReset.style.display = 'none';
+    applyFrameLayout();
   }
+
+  // 칸 크기가 바뀌면 축소 비율도 확대 위치도 다시 계산해야 한다
+  new ResizeObserver(applyFrameLayout).observe(box);
+  applyFrameLayout();
 
   function startDragSelect() {
     const dragOverlay = document.createElement('div');
