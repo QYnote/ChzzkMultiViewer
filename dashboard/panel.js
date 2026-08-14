@@ -24,9 +24,16 @@ function createCellOverlay(streamer, iframe, box) {
   toolbar.innerHTML = `
     <span class="cell-latency-label"></span>
     <button class="cell-tool-btn btn-cell-refresh" title="새로고침">↻</button>
+    <button class="cell-tool-btn btn-cell-grab" title="끌어서 자리 옮기기">⠿</button>
     <button class="cell-tool-btn btn-cell-menu" title="기타 조작">⋯</button>
   `;
   const btnMenu = toolbar.querySelector('.btn-cell-menu');
+
+  // 손잡이를 잡아야 끌기가 시작된다. 방송 화면 위에서 누른 마우스는 방송 페이지가
+  // 먼저 가져가므로 칸 아무 데나 잡아 끄는 방식은 만들 수 없다.
+  toolbar.querySelector('.btn-cell-grab').addEventListener('mousedown', (e) => {
+    startCellDrag(e, streamer.channelId);
+  });
 
   const menu = document.createElement('div');
   menu.className = 'cell-menu';

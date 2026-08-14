@@ -7,7 +7,7 @@
 // dir 'row' 는 좌우로 나눈 것, 'col' 은 위아래로 나눈 것이다.
 // ratios 는 합이 1인 비율이라 창 크기가 바뀌어도 배치가 그대로 유지된다.
 
-const LAYOUT_MIN_PX = 160;   // 칸 하나가 가질 수 있는 최소 크기
+const LAYOUT_MIN_PX = 80;    // 칸 하나가 가질 수 있는 최소 크기
 
 function makeLayoutCell(channelId) {
   return { type: 'cell', channelId };
@@ -140,6 +140,41 @@ function syncLayoutWithList(node, channelIds, stageRect) {
     }
   });
   return tree;
+}
+
+// ── 두 칸의 채널을 맞바꾸기 ──
+// 배치 구조는 그대로 두고 어느 칸이 어느 채널을 담는지만 바꾼다.
+function swapLayoutChannels(node, idA, idB) {
+  if (!node) return null;
+  if (node.type === 'cell') {
+    if (node.channelId === idA) return makeLayoutCell(idB);
+    if (node.channelId === idB) return makeLayoutCell(idA);
+    return node;
+  }
+  return makeLayoutSplit(
+    node.dir,
+    node.children.map(child => swapLayoutChannels(child, idA, idB)),
+    node.ratios.slice()
+  );
+}
+
+// ── 채널을 다른 칸의 가장자리로 옮기기 ──
+// 옮길 채널을 원래 자리에서 먼저 뺀 뒤(형제 칸이 그 자리를 흡수한다),
+// 목적지 칸을 둘로 쪼개 그 안에 넣는다. 새로 쪼갠 두 칸은 반반으로 시작한다.
+// side — 'left' | 'right' | 'top' | 'bottom'
+function moveLayoutChannel(node, sourceId, targetId, side) {
+  if (!node || sourceId === targetId) return node;
+
+  const trimmed = removeLayoutChannel(node, sourceId);
+  if (!trimmed) return node;
+
+  const dir     = (side === 'left' || side === 'right') ? 'row' : 'col';
+  const isFirst = (side === 'left' || side === 'top');
+  const children = isFirst
+    ? [makeLayoutCell(sourceId), makeLayoutCell(targetId)]
+    : [makeLayoutCell(targetId), makeLayoutCell(sourceId)];
+
+  return replaceLayoutCell(trimmed, targetId, makeLayoutSplit(dir, children));
 }
 
 // ── 트리를 실제 좌표로 펼치기 ──

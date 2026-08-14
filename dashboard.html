@@ -338,6 +338,15 @@
       background: rgba(255, 255, 255, 0.25);
     }
 
+    .btn-cell-grab {
+      cursor: grab;
+      font-size: 13px;
+    }
+
+    .btn-cell-grab:active {
+      cursor: grabbing;
+    }
+
     .btn-cell-remove:hover {
       background: rgba(220, 50, 50, 0.75);
       color: #fff;
@@ -438,6 +447,42 @@
       border-radius: 4px;
     }
 
+    /* ── 자리 옮기기 ── */
+    .cell-box.is-dragging {
+      opacity: 0.45;
+    }
+
+    /* 놓을 자리 미리보기. 가장자리면 그쪽 절반, 가운데면 칸 전체를 덮는다 */
+    .drop-indicator {
+      position: absolute;
+      z-index: 30;
+      background: rgba(59, 158, 214, 0.3);
+      border: 2px solid rgba(59, 158, 214, 0.9);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .drop-indicator.is-swap {
+      background: rgba(0, 199, 60, 0.25);
+      border-color: rgba(0, 199, 60, 0.9);
+    }
+
+    /* 마우스를 따라다니는 채널 이름표 */
+    .drag-ghost {
+      position: fixed;
+      z-index: 200;
+      background: rgba(17, 19, 24, 0.95);
+      border: 1px solid #2a2d38;
+      color: #e4e6ea;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
     /* ── 시청 목록이 비었을 때 ── */
     #empty-notice {
       position: absolute;
@@ -488,6 +533,7 @@
   <script src="dashboard/main.js"></script>
   <script src="dashboard/layout-tree.js"></script>
   <script src="dashboard/layout-view.js"></script>
+  <script src="dashboard/layout-drag.js"></script>
   <script src="dashboard/panel.js"></script>
   <script src="dashboard/player.js"></script>
   <script src="dashboard/control.js"></script>
