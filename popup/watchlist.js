@@ -36,6 +36,34 @@ function renderWatchlist(container, list, favoriteList) {
   });
 }
 
+// ── 생방송 여부 배지 ──
+// 조회는 시간이 걸리므로 자리만 잡아 두고 답이 오면 그때 채운다.
+// 답이 오지 않거나 알 수 없으면 감춘 채로 둔다.
+function createLiveBadge(channelId, platform) {
+  const badge = document.createElement('span');
+  badge.style.cssText = 'font-size:9px; padding:1px 4px; border-radius:3px; font-weight:bold; flex-shrink:0; visibility:hidden;';
+  badge.textContent = 'OFF';
+
+  chrome.runtime.sendMessage(
+    { action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' },
+    (response) => {
+      if (chrome.runtime.lastError || !response?.success || response.openLive == null) return;
+      badge.style.visibility = 'visible';
+      if (response.openLive) {
+        badge.textContent = 'LIVE';
+        badge.style.background = '#e50914';
+        badge.style.color = '#fff';
+      } else {
+        badge.textContent = 'OFF';
+        badge.style.background = '#e1e4e6';
+        badge.style.color = '#767c82';
+      }
+    }
+  );
+
+  return badge;
+}
+
 // ── 시청 목록 항목 DOM 생성 ──
 function buildStreamerItem(streamer, index, list, favoriteList) {
   const itemDiv = document.createElement('div');
@@ -57,8 +85,11 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   iconEl.alt = '';
   textSpan.appendChild(iconEl);
 
+  textSpan.appendChild(createLiveBadge(streamer.channelId, streamer.platform));
+
   const nameStrong = document.createElement('strong');
   nameStrong.textContent = streamer.name;
+  nameStrong.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
   textSpan.appendChild(nameStrong);
 
   itemDiv.appendChild(textSpan);
