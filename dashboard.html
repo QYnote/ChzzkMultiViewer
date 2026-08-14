@@ -85,131 +85,88 @@
       font-weight: 700;
     }
 
-    .btn-header {
-      height: 28px;
-      padding: 0 11px;
-      background: #1e2028;
-      color: #9ca3af;
-      border: 1px solid #2a2d38;
-      border-radius: 5px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.1s, color 0.1s;
-      white-space: nowrap;
-    }
-
-    .btn-header:hover {
-      background: #2a2d38;
-      color: #e4e6ea;
-    }
-
-    /* ── 3열 레이아웃 ── */
-    .layout-wrapper {
-      display: flex;
+    /* ── 칸이 놓이는 바탕 ── */
+    /* 방송 화면 상자는 여기에 절대 좌표로 놓인다. 자리만 옮기고 부모는 바꾸지 않는다. */
+    .stage {
+      position: relative;
       width: 100%;
       height: calc(100vh - 44px);
       overflow: hidden;
+      background: #0a0b0e;
     }
 
-    /* ── 좌측: 서브 채널 ── */
-    .col-sub {
-      width: 22%;
-      min-width: 160px;
-      background: #0d0e12;
-      border-right: 1px solid #1e2028;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    .col-header {
-      height: 36px;
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #1e2028;
-      font-size: 10px;
-      font-weight: 700;
-      color: #4b5563;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    .col-header .col-sub-label {
-      color: #00c73c;
-      font-size: 9px;
-      font-weight: normal;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-
-    #sub-stream-list {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      scrollbar-width: none;
-    }
-    #sub-stream-list::-webkit-scrollbar { display: none; }
-
-    /* ── 서브 타일 ── */
-    .sub-tile {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #1a1c22;
+    /* ── 방송 화면 상자 ── */
+    .cell-box {
+      position: absolute;
+      background: #000;
       border: 1px solid #1e2028;
-      border-radius: 6px;
+      border-radius: 4px;
       overflow: hidden;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: border-color 0.15s;
     }
 
-    .sub-tile:hover {
-      border-color: #00c73c;
-    }
-
-    .sub-tile iframe {
+    .cell-frame {
       width: 100%;
       height: 100%;
       border: none;
-      pointer-events: none;
+      display: block;
     }
 
-    /* 오버레이: 위아래 그라디언트 + 이름/컨트롤 */
-    .sub-tile-overlay {
+    /* ── 칸 사이 경계 ── */
+    .layout-handle {
+      position: absolute;
+      z-index: 20;
+      background: transparent;
+      transition: background 0.1s;
+    }
+
+    .layout-handle.is-vertical   { cursor: col-resize; }
+    .layout-handle.is-horizontal { cursor: row-resize; }
+    .layout-handle:hover         { background: rgba(0, 199, 60, 0.35); }
+
+    /* ── 칸 위에 얹히는 조작 화면 ── */
+    /* opacity만 0으로 두면 보이지 않는 채로 클릭을 가로채 방송 조작을 막는다.
+       visibility까지 함께 감춰야 마우스를 올렸을 때만 조작이 잡힌다. */
+    .cell-overlay {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      /* 위쪽만 어둡게 깐다. 아래쪽은 방송 페이지의 조작 바 자리라 건드리지 않는다. */
       background: linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0.72) 0%,
-        transparent 40%,
-        transparent 60%,
-        rgba(0, 0, 0, 0.72) 100%
+        transparent 40%
       );
       opacity: 0;
-      transition: opacity 0.15s;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
       pointer-events: none;
       z-index: 3;
     }
 
-    .sub-tile:hover .sub-tile-overlay {
+    .cell-box:hover .cell-overlay {
       opacity: 1;
+      visibility: visible;
     }
 
-    /* ── 서브 타일 프로필 사진 (크기는 JS에서 타일 높이의 1/4, 원본 크기 중 작은 값으로 지정) ── */
-    .sub-profile-img {
+    .cell-top {
+      pointer-events: none;
+    }
+
+    .cell-name {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      padding: 7px 8px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    /* ── 프로필 사진 (크기는 칸 높이의 1/4과 원본 중 작은 값으로 스크립트가 지정) ── */
+    .cell-profile-img {
       position: absolute;
       top: 6px;
       left: 6px;
@@ -221,13 +178,13 @@
       z-index: 4;
     }
 
-    /* ── 서브 타일 채널 이름 태그 (항상 표시 모드 전용) ── */
-    .sub-tile-name-tag {
+    /* ── 채널 이름 태그 (항상 표시 모드 전용) ── */
+    .cell-name-tag {
       position: absolute;
       top: 6px;
       left: 6px;
       max-width: calc(100% - 32px);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       color: #fff;
       background: rgba(0, 0, 0, 0.55);
@@ -241,31 +198,27 @@
       display: none;
     }
 
-    /* ── 서브채널 정보 표시 모드 ── */
+    /* ── 채널 표시 방식 ── */
     /* 항상 표시 (프로필 사진) */
-    .layout-wrapper[data-profile-display="always-profile"] .sub-profile-img { opacity: 1; }
-    .layout-wrapper[data-profile-display="always-profile"] .sub-tile-name { display: none; }
+    .stage[data-profile-display="always-profile"] .cell-profile-img { opacity: 1; }
+    .stage[data-profile-display="always-profile"] .cell-name { display: none; }
 
     /* 항상 표시 (채널 이름) */
-    .layout-wrapper[data-profile-display="always-name"] .sub-profile-img { display: none; }
-    .layout-wrapper[data-profile-display="always-name"] .sub-tile-name-tag { display: block; }
-    .layout-wrapper[data-profile-display="always-name"] .sub-tile-name { display: none; }
+    .stage[data-profile-display="always-name"] .cell-profile-img { display: none; }
+    .stage[data-profile-display="always-name"] .cell-name-tag { display: block; }
+    .stage[data-profile-display="always-name"] .cell-name { display: none; }
 
     /* 마우스 올릴 때 (프로필 사진) */
-    .layout-wrapper[data-profile-display="hover-profile"] .sub-tile:hover .sub-profile-img { opacity: 1; }
-    .layout-wrapper[data-profile-display="hover-profile"] .sub-tile-name { display: none; }
+    .stage[data-profile-display="hover-profile"] .cell-box:hover .cell-profile-img { opacity: 1; }
+    .stage[data-profile-display="hover-profile"] .cell-name { display: none; }
 
-    /* 마우스 올릴 때 (채널 이름): 기존 오버레이 채널명이 호버 시 그대로 표시됨 */
-    .layout-wrapper[data-profile-display="hover-name"] .sub-profile-img { display: none; }
+    /* 마우스 올릴 때 (채널 이름): 오버레이의 채널명이 그대로 쓰인다 */
+    .stage[data-profile-display="hover-name"] .cell-profile-img { display: none; }
 
-    /* 표시 안함 */
-    .layout-wrapper[data-profile-display="none"] .sub-profile-img { display: none; }
+    /* ── 방송이 없는 칸: 닫기 버튼을 계속 보여준다 ── */
+    .cell-box.is-offline .cell-overlay { opacity: 1; visibility: visible; }
 
-    /* ── 오프라인 타일: 삭제 버튼 항상 표시 ── */
-    .sub-tile.is-offline .sub-tile-overlay { opacity: 1; }
-    .sub-tile.is-offline .sub-controls { display: none; }
-
-    /* ── 비방송 안내 오버레이 ── */
+    /* ── 안내 ── */
     .offline-notice {
       position: absolute;
       inset: 0;
@@ -274,19 +227,13 @@
       justify-content: center;
       background: #0d0e12;
       color: #6b7280;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       text-align: center;
       pointer-events: none;
       z-index: 2;
     }
 
-    .col-main .offline-notice {
-      bottom: 30px;
-      font-size: 16px;
-    }
-
-    /* ── 초기화 진행중 안내 오버레이 ── */
     .init-notice {
       position: absolute;
       inset: 0;
@@ -295,19 +242,13 @@
       justify-content: center;
       background: rgba(13, 14, 18, 0.85);
       color: #e5e7eb;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       text-align: center;
       pointer-events: none;
       z-index: 3;
     }
 
-    .col-main .init-notice {
-      bottom: 30px;
-      font-size: 16px;
-    }
-
-    /* ── 수동 와이드 전환 필요 안내 오버레이 ── */
     .manual-wide-notice {
       position: absolute;
       inset: 0;
@@ -318,17 +259,12 @@
       gap: 8px;
       background: rgba(13, 14, 18, 0.85);
       color: #e5e7eb;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       text-align: center;
       cursor: pointer;
       padding: 0 12px;
       z-index: 3;
-    }
-
-    .col-main .manual-wide-notice {
-      bottom: 30px;
-      font-size: 16px;
     }
 
     .manual-wide-notice .manual-wide-hint {
@@ -352,69 +288,42 @@
       background: rgba(255, 255, 255, 0.2);
     }
 
-    .sub-tile-top {
-      pointer-events: none;
-    }
-
-    .sub-tile-name {
-      font-size: 10px;
-      font-weight: 700;
-      color: #fff;
-      padding: 7px 8px 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      pointer-events: none;
-    }
-
-    /* ✕ 버튼: 오버레이와 독립적으로 타일에 직접 배치 (opacity로 show/hide) */
-    .btn-sub-remove {
+    /* ── 조작 줄 (우측 상단) ── */
+    /* 방송 페이지의 조작 바가 화면 아래를 쓰므로 우리 조작은 전부 위로 모은다. */
+    .cell-toolbar {
       position: absolute;
       top: 5px;
       right: 5px;
       z-index: 5;
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      color: #e4e6ea;
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      font-size: 10px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: background 0.1s, opacity 0.15s;
-      line-height: 1;
-    }
-
-    .sub-tile:hover .btn-sub-remove,
-    .sub-tile.is-offline .btn-sub-remove {
-      opacity: 1;
-    }
-
-    .btn-sub-remove:hover {
-      background: rgba(220, 50, 50, 0.6);
-      color: #fff;
-    }
-
-    /* 하단 컨트롤 바 */
-    .sub-controls {
       display: flex;
       align-items: center;
       gap: 5px;
-      padding: 5px 6px;
-      pointer-events: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
     }
 
-    .sub-controls .btn-ctrl {
+    .cell-box:hover .cell-toolbar,
+    .cell-box.is-offline .cell-toolbar,
+    .cell-box.menu-open .cell-toolbar {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 방송이 없는 칸에서는 닫기만 남긴다 */
+    .cell-box.is-offline .cell-latency-label,
+    .cell-box.is-offline .btn-cell-refresh,
+    .cell-box.is-offline .btn-cell-menu {
+      display: none;
+    }
+
+    .cell-tool-btn {
       flex-shrink: 0;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.55);
       border: none;
       color: #e4e6ea;
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border-radius: 4px;
       font-size: 11px;
       cursor: pointer;
@@ -425,412 +334,74 @@
       line-height: 1;
     }
 
-    .sub-controls .btn-ctrl:hover {
-      background: rgba(255, 255, 255, 0.2);
+    .cell-tool-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
     }
 
-    .btn-mute-toggle.unmuted {
-      background: rgba(0, 199, 60, 0.3);
-      color: #00c73c;
+    .btn-cell-grab {
+      cursor: grab;
+      font-size: 13px;
     }
 
-    /* 서브 채널 딜레이 + 새로고침 묶음 */
-    .sub-refresh-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      flex-shrink: 0;
+    .btn-cell-grab:active {
+      cursor: grabbing;
     }
 
-    .sub-latency-label {
-      font-size: 9px;
-      color: rgba(255, 255, 255, 0.75);
-      white-space: nowrap;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
+    .btn-cell-remove:hover {
+      background: rgba(220, 50, 50, 0.75);
+      color: #fff;
     }
 
-    /* 볼륨 슬라이더 */
-    .vol-slider {
-      flex: 1;
-      min-width: 0;
-      height: 4px;
-      -webkit-appearance: none;
-      appearance: none;
-      border-radius: 2px;
-      outline: none;
-      cursor: pointer;
-      background: linear-gradient(
-        to right,
-        #fff var(--pct, 0%),
-        rgba(255, 255, 255, 0.2) var(--pct, 0%)
-      );
-    }
-
-    .vol-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #fff;
-      cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-      transition: transform 0.1s;
-    }
-
-    .vol-slider:hover::-webkit-slider-thumb {
-      transform: scale(1.2);
-    }
-
-    /* ── 중앙: 메인 플레이어 ── */
-    .col-main {
-      flex: 1;
-      background: #000;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    }
-
-    #main-player {
-      flex: 1;
-      width: 100%;
-      border: none;
-      display: none;
-    }
-
-    #main-empty-notice {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      color: #374151;
-    }
-
-    #main-empty-notice .empty-icon {
-      font-size: 36px;
-      opacity: 0.5;
-    }
-
-    #main-empty-notice p {
-      font-size: 12px;
-      color: #4b5563;
-      text-align: center;
-      line-height: 1.7;
-    }
-
-    /* 하단 정보 바 */
-    #main-info-bar {
-      height: 30px;
-      background: #0d0e12;
-      border-top: 1px solid #1e2028;
-      display: none;
-      align-items: center;
-      padding: 0 12px;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #e50914;
-      flex-shrink: 0;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.25; }
-    }
-
-    #main-streamer-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: #c9cdd4;
-    }
-
-    #main-latency {
-      margin-left: auto;
-      font-size: 11px;
-      color: #4b5563;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    #btn-main-refresh {
-      margin-left: 4px;
-      background: none;
-      color: #4b5563;
-      border: none;
-      font-size: 11px;
-      cursor: pointer;
-      padding: 2px 7px;
+    .cell-latency-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(0, 0, 0, 0.55);
+      padding: 3px 6px;
       border-radius: 4px;
-      transition: color 0.1s, background 0.1s;
-    }
-
-    #btn-main-refresh:hover {
-      color: #e4e6ea;
-      background: #1e2028;
-    }
-
-    /* ── 서브채널 리사이즈 핸들 + 접기 버튼 ── */
-    .resize-handle {
-      width: 14px;
-      background: transparent;
-      cursor: col-resize;
-      flex-shrink: 0;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .btn-sub-collapse {
-      width: 14px;
-      height: 40px;
-      background: #1e2028;
-      border: 1px solid #2a2d38;
-      border-left: none;
-      color: #4b5563;
-      cursor: pointer;
-      font-size: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 0 5px 5px 0;
-      transition: background 0.1s, color 0.1s;
-      flex-shrink: 0;
-      z-index: 11;
-    }
-
-    .btn-sub-collapse:hover {
-      background: #2a2d38;
-      color: #00c73c;
-    }
-
-    .resize-handle.dragging .btn-sub-collapse {
-      pointer-events: none;
-    }
-
-    /* ── 서브채널 접힘 상태 ── */
-    .col-sub {
-      transition: width 0.2s ease, min-width 0.2s ease;
-    }
-
-    .col-sub.sub-collapsed {
-      width: 0 !important;
-      min-width: 0 !important;
-    }
-
-    /* ── 우측: 채팅 ── */
-    .col-chat {
-      width: 20%;
-      min-width: 200px;
-      background: #0d0e12;
-      border-left: 1px solid #1e2028;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      transition: width 0.15s, min-width 0.15s;
-    }
-
-    .col-chat.chat-hidden {
-      display: none;
-    }
-
-    #chat-streamer-label {
-      color: #00c73c;
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: none;
-      letter-spacing: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 90px;
+      line-height: 1.4;
+      font-variant-numeric: tabular-nums;
     }
 
-    #chat-frame {
-      flex: 1;
-      width: 100%;
-      border: none;
+    .cell-menu {
+      position: absolute;
+      top: 32px;
+      right: 5px;
+      z-index: 6;
       display: none;
-    }
-
-    #chat-empty-notice {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 11px;
-      color: #4b5563;
-      text-align: center;
-      line-height: 1.8;
-    }
-
-    /* 빈 상태 메시지 */
-    .sub-empty-msg {
-      font-size: 11px;
-      color: #4b5563;
-      text-align: center;
-      padding: 20px 10px;
-      line-height: 1.8;
-    }
-
-    /* ── 레이아웃 2: 반전형 (서브 오른쪽, 채팅 왼쪽) ── */
-    .layout-wrapper[data-layout="2"] .col-chat {
-      order: 1;
-      border-left: none;
-      border-right: 1px solid #1e2028;
-    }
-    .layout-wrapper[data-layout="2"] .col-main  { order: 2; }
-    .layout-wrapper[data-layout="2"] .resize-handle { order: 3; }
-    .layout-wrapper[data-layout="2"] .col-sub {
-      order: 4;
-      border-right: none;
-      border-left: 1px solid #1e2028;
-    }
-    .layout-wrapper[data-layout="2"] .btn-sub-collapse {
-      border-right: none;
-      border-left: 1px solid #2a2d38;
-      border-radius: 5px 0 0 5px;
-    }
-
-    /* ── 레이아웃 3/4: 서브 가로 스트립 (3행 그리드: 메인 | 핸들 | 서브) ── */
-    .layout-wrapper[data-layout="3"],
-    .layout-wrapper[data-layout="4"] {
-      display: grid;
-      grid-template-columns: 1fr auto;
-    }
-    /* grid-template-rows는 JS에서 inline style로 직접 제어 (행 자체가 줄어야 하므로) */
-    .layout-wrapper[data-layout="3"] { grid-template-rows: 1fr 14px 148px; transition: grid-template-rows 0.2s ease; }
-    .layout-wrapper[data-layout="4"] { grid-template-rows: 148px 14px 1fr; transition: grid-template-rows 0.2s ease; }
-
-    .layout-wrapper[data-layout="3"] .col-sub,
-    .layout-wrapper[data-layout="4"] .col-sub {
-      grid-column: 1 / 3;
-      width: auto !important;
-      min-width: unset !important;
-      height: 148px;
-      flex-direction: row;
-      border-right: none;
-      overflow: hidden;
-      transition: height 0.2s ease;
-    }
-    .layout-wrapper[data-layout="3"] .col-sub { grid-row: 3; border-top: 1px solid #1e2028; }
-    .layout-wrapper[data-layout="4"] .col-sub { grid-row: 1; border-bottom: 1px solid #1e2028; }
-
-    /* 접힘 상태: width 대신 height 를 0으로 */
-    .layout-wrapper[data-layout="3"] .col-sub.sub-collapsed,
-    .layout-wrapper[data-layout="4"] .col-sub.sub-collapsed {
-      width: auto !important;
-      min-width: unset !important;
-      height: 0 !important;
-      min-height: 0 !important;
-    }
-
-    .layout-wrapper[data-layout="3"] .col-sub .col-header,
-    .layout-wrapper[data-layout="4"] .col-sub .col-header { display: none; }
-
-    .layout-wrapper[data-layout="3"] #sub-stream-list,
-    .layout-wrapper[data-layout="4"] #sub-stream-list {
-      flex-direction: row;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 4px 8px;
-      align-items: stretch;
-    }
-    .layout-wrapper[data-layout="3"] .sub-tile,
-    .layout-wrapper[data-layout="4"] .sub-tile {
-      width: auto !important;
-      height: 100%;
-      flex-shrink: 0;
-    }
-
-    .layout-wrapper[data-layout="3"] .col-main { grid-column: 1; grid-row: 1; }
-    .layout-wrapper[data-layout="4"] .col-main { grid-column: 1; grid-row: 3; }
-    /* width: 20vw → 레이아웃 1/2의 width:20% 와 동일 (vw는 셀 너비 기준이 아닌 뷰포트 기준) */
-    .layout-wrapper[data-layout="3"] .col-chat { grid-column: 2; grid-row: 1; width: 20vw; }
-    .layout-wrapper[data-layout="4"] .col-chat { grid-column: 2; grid-row: 3; width: 20vw; }
-
-    .layout-wrapper[data-layout="3"] .resize-handle,
-    .layout-wrapper[data-layout="4"] .resize-handle { display: none; }
-
-    /* ── 수평 접기 핸들 (레이아웃 3/4 전용) ── */
-    .hresize-handle {
-      display: none;
-      cursor: row-resize;
-    }
-    .layout-wrapper[data-layout="3"] .hresize-handle,
-    .layout-wrapper[data-layout="4"] .hresize-handle {
-      grid-column: 1 / 3;
-      grid-row: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0d0e12;
-      z-index: 10;
-    }
-    .layout-wrapper[data-layout="3"] .hresize-handle { border-bottom: 1px solid #1e2028; }
-    .layout-wrapper[data-layout="4"] .hresize-handle { border-top: 1px solid #1e2028; }
-
-    .btn-sub-hcollapse {
-      width: 44px;
-      height: 14px;
-      background: #1e2028;
+      flex-direction: column;
+      min-width: 128px;
+      padding: 4px;
+      gap: 2px;
+      background: rgba(17, 19, 24, 0.96);
       border: 1px solid #2a2d38;
-      color: #4b5563;
-      cursor: pointer;
-      font-size: 9px;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .cell-box.menu-open .cell-menu {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.1s, color 0.1s;
-    }
-    .layout-wrapper[data-layout="3"] .btn-sub-hcollapse {
-      border-top: none;
-      border-radius: 0 0 5px 5px;
-    }
-    .layout-wrapper[data-layout="4"] .btn-sub-hcollapse {
-      border-bottom: none;
-      border-radius: 5px 5px 0 0;
-    }
-    .btn-sub-hcollapse:hover { background: #2a2d38; color: #00c73c; }
-
-    /* ── 서브 타일 드래그 순서 변경 ── */
-    .sub-tile-dragging {
-      opacity: 0.4;
     }
 
-    .sub-drag-indicator {
-      flex-shrink: 0;
-      background: #3B9ED6;
-      border-radius: 2px;
-      pointer-events: none;
-      width: 100%;
-      height: 3px;
+    .cell-menu-item {
+      background: none;
+      border: none;
+      color: #c9cdd4;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: left;
+      padding: 6px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    .layout-wrapper[data-layout="3"] .sub-drag-indicator,
-    .layout-wrapper[data-layout="4"] .sub-drag-indicator {
-      width: 3px;
-      height: auto;
-      align-self: stretch;
+    .cell-menu-item:hover {
+      background: #2a2d38;
+      color: #e4e6ea;
     }
 
-    /* ── 서브 타일 영역 확대 ── */
-    .btn-sub-zoom.zoomed {
-      background: rgba(59, 158, 214, 0.4);
-      color: #3B9ED6;
-    }
-
+    /* ── 영역 확대 ── */
     .zoom-drag-overlay {
       position: absolute;
       inset: 0;
@@ -845,7 +416,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       color: #fff;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       text-align: center;
       pointer-events: none;
@@ -869,11 +440,71 @@
       justify-content: center;
       background: rgba(0, 0, 0, 0.7);
       color: #fff;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       z-index: 11;
       pointer-events: none;
-      border-radius: 6px;
+      border-radius: 4px;
+    }
+
+    /* ── 자리 옮기기 ── */
+    .cell-box.is-dragging {
+      opacity: 0.45;
+    }
+
+    /* 놓을 자리 미리보기. 가장자리면 그쪽 절반, 가운데면 칸 전체를 덮는다 */
+    .drop-indicator {
+      position: absolute;
+      z-index: 30;
+      background: rgba(59, 158, 214, 0.3);
+      border: 2px solid rgba(59, 158, 214, 0.9);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .drop-indicator.is-swap {
+      background: rgba(0, 199, 60, 0.25);
+      border-color: rgba(0, 199, 60, 0.9);
+    }
+
+    /* 마우스를 따라다니는 채널 이름표 */
+    .drag-ghost {
+      position: fixed;
+      z-index: 200;
+      background: rgba(17, 19, 24, 0.95);
+      border: 1px solid #2a2d38;
+      color: #e4e6ea;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ── 시청 목록이 비었을 때 ── */
+    #empty-notice {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      color: #374151;
+    }
+
+    #empty-notice .empty-icon {
+      font-size: 36px;
+      opacity: 0.5;
+    }
+
+    #empty-notice p {
+      font-size: 12px;
+      color: #4b5563;
+      text-align: center;
+      line-height: 1.7;
     }
   </style>
 </head>
@@ -885,63 +516,25 @@
     <span id="sync-badge"></span>
     <div class="header-right">
       <span class="status-text">시청 중 <strong id="streamer-count">0</strong>채널</span>
-      <button class="btn-header" id="btn-toggle-chat">💬 채팅 숨기기</button>
     </div>
   </header>
 
-  <div class="layout-wrapper">
-
-    <!-- 좌측: 서브 채널 목록 -->
-    <aside class="col-sub">
-      <div class="col-header">
-        <span>서브 채널</span>
-        <span class="col-sub-label">클릭하면 메인으로</span>
-      </div>
-      <div id="sub-stream-list"></div>
-    </aside>
-
-    <!-- 서브채널 너비 조절 핸들 (레이아웃 1/2 전용) -->
-    <div class="resize-handle" id="resize-handle">
-      <button class="btn-sub-collapse" id="btn-sub-collapse" title="서브채널 접기/펼치기">◀</button>
+  <!-- 방송 화면 상자와 칸 경계는 스크립트가 여기에 넣는다 -->
+  <div class="stage" id="stage" data-profile-display="hover-name">
+    <div id="empty-notice">
+      <div class="empty-icon">📺</div>
+      <p>팝업에서 스트리머를 추가하면<br>여기에 화면이 구성됩니다.</p>
     </div>
-
-    <!-- 수평 서브채널 접기 핸들 (레이아웃 3/4 전용) -->
-    <div class="hresize-handle" id="hresize-handle">
-      <button class="btn-sub-hcollapse" id="btn-sub-hcollapse" title="서브채널 접기/펼치기">▼</button>
-    </div>
-
-    <!-- 중앙: 메인 플레이어 -->
-    <section class="col-main">
-      <!-- main iframe은 JS가 동적으로 삽입/이동 -->
-      <div id="main-empty-notice">
-        <div class="empty-icon">📺</div>
-        <p>팝업에서 스트리머를 추가하면<br>여기에 화면이 구성됩니다.</p>
-      </div>
-      <div id="main-info-bar">
-        <span class="live-dot"></span>
-        <span id="main-streamer-name">—</span>
-        <span id="main-latency"></span>
-        <button id="btn-main-refresh">↻ 새로고침</button>
-      </div>
-    </section>
-
-    <!-- 우측: 채팅 -->
-    <aside class="col-chat">
-      <div class="col-header">
-        <span>LIVE CHAT</span>
-        <span id="chat-streamer-label">—</span>
-      </div>
-      <iframe id="chat-frame" allow="encrypted-media"></iframe>
-      <div id="chat-empty-notice">메인 채널을<br>선택하면<br>채팅이 표시됩니다.</div>
-    </aside>
-
   </div>
 
   <script src="platforms/chzzk.js"></script>
   <script src="platforms/soop.js"></script>
   <script src="platforms/index.js"></script>
   <script src="dashboard/main.js"></script>
-  <script src="dashboard/chat.js"></script>
+  <script src="dashboard/layout-tree.js"></script>
+  <script src="dashboard/layout-view.js"></script>
+  <script src="dashboard/layout-drag.js"></script>
+  <script src="dashboard/panel.js"></script>
   <script src="dashboard/player.js"></script>
   <script src="dashboard/control.js"></script>
 </body>
