@@ -1,4 +1,4 @@
-// ── iframe 생성 ──
+// ── 방송 화면 만들기 ──
 function buildIframeSrc(iframe) {
   const muted = iframe.dataset.muted === '1';
   return getPlatform(iframe.dataset.platform).buildStreamUrl(iframe.dataset.channelId, muted);
@@ -15,14 +15,6 @@ function createIframe(channelId, platform, muted) {
   return iframe;
 }
 
-function styleAsMain(iframe) {
-  iframe.style.cssText = 'flex:1; width:100%; border:none; display:block; pointer-events:auto;';
-}
-
-function styleAsSub(iframe) {
-  iframe.style.cssText = 'width:100%; height:100%; border:none; pointer-events:none; flex:none;';
-}
-
 // ── 생방송 여부 조회 ──
 function checkLiveStatus(channelId, platform, callback) {
   chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' }, (response) => {
@@ -31,7 +23,7 @@ function checkLiveStatus(channelId, platform, callback) {
   });
 }
 
-// ── 채널 프로필 사진 조회 (타일 생성 시 1회) ──
+// ── 채널 프로필 사진 조회 (칸을 만들 때 1회) ──
 function fetchChannelImage(channelId, platform, callback) {
   chrome.runtime.sendMessage({ action: 'fetchChannelLiveStatus', channelId, platform: platform || 'chzzk' }, (response) => {
     if (chrome.runtime.lastError || !response?.success) { callback(null); return; }
@@ -39,37 +31,39 @@ function fetchChannelImage(channelId, platform, callback) {
   });
 }
 
-// ── 서브 타일 프로필 사진 엘리먼트 생성 ──
-// 크기 = 타일 높이의 1/4과 이미지 원본 크기 중 더 작은 값 (타일 크기 변경 시 자동 재계산)
-function createSubProfileImg(imageUrl, tile) {
+// ── 프로필 사진 ──
+// 칸 높이의 1/4, 원본 크기, 상한 중 가장 작은 값을 쓴다. 칸 크기가 바뀌면 다시 계산한다.
+const PROFILE_MAX_PX = 64;
+
+function createCellProfileImg(imageUrl, box) {
   const img = document.createElement('img');
-  img.className = 'sub-profile-img';
+  img.className = 'cell-profile-img';
   img.src = imageUrl;
 
   function resize() {
     const naturalSize = img.naturalHeight || Infinity;
-    const targetSize = Math.min(tile.clientHeight / 4, naturalSize);
+    const targetSize = Math.min(box.clientHeight / 4, naturalSize, PROFILE_MAX_PX);
     img.style.width = targetSize + 'px';
     img.style.height = targetSize + 'px';
   }
 
   img.addEventListener('load', resize);
-  new ResizeObserver(resize).observe(tile);
+  new ResizeObserver(resize).observe(box);
 
   return img;
 }
 
-// ── 초기화 진행중 안내 오버레이 ──
+// ── 초기화 진행중 안내 ──
 function createInitNotice() {
   const notice = document.createElement('div');
   notice.className = 'init-notice';
   notice.textContent = '초기화 진행중입니다';
-  // 와이드 모드 전환 완료 신호가 오지 않는 경우를 대비한 안전장치 (최대 1분 시도 + 여유시간)
+  // 와이드 전환 완료 신호가 오지 않는 경우를 대비한 안전장치 (최대 1분 시도 + 여유시간)
   setTimeout(() => notice.remove(), 65000);
   return notice;
 }
 
-// ── 수동 와이드 전환 필요 안내 오버레이 ──
+// ── 수동 최대화 필요 안내 ──
 function createManualWideNotice(onRefresh) {
   const notice = document.createElement('div');
   notice.className = 'manual-wide-notice';
@@ -90,7 +84,7 @@ function createManualWideNotice(onRefresh) {
   return notice;
 }
 
-// ── 비방송 안내 오버레이 ──
+// ── 비방송 안내 ──
 function createOfflineNotice() {
   const notice = document.createElement('div');
   notice.className = 'offline-notice';
@@ -98,20 +92,20 @@ function createOfflineNotice() {
   return notice;
 }
 
-function updateOfflineNotice(container, channelId, iframe) {
+function updateOfflineNotice(box, channelId, iframe) {
   checkLiveStatus(channelId, iframe?.dataset.platform, (openLive) => {
     const isOffline = openLive === false;
-    container._isOffline = isOffline;
-    container.classList.toggle('is-offline', isOffline);
+    box._isOffline = isOffline;
+    box.classList.toggle('is-offline', isOffline);
 
-    // 비방송 상태에서는 영상이 재생되지 않아 와이드 모드 전환 신호가 오지 않으므로 즉시 제거
-    if (isOffline) container.querySelector('.init-notice')?.remove();
+    // 방송이 없으면 영상이 시작되지 않아 와이드 전환 신호도 오지 않으므로 안내를 지운다
+    if (isOffline) box.querySelector('.init-notice')?.remove();
 
-    let notice = container.querySelector('.offline-notice');
+    let notice = box.querySelector('.offline-notice');
     if (isOffline) {
       if (!notice) {
         notice = createOfflineNotice();
-        container.appendChild(notice);
+        box.appendChild(notice);
       }
       notice.style.display = 'flex';
       if (iframe && iframe.getAttribute('src')) iframe.removeAttribute('src');
@@ -122,25 +116,23 @@ function updateOfflineNotice(container, channelId, iframe) {
   });
 }
 
-// ── 시청 목록 전체 비방송 여부 재확인 (1분 주기) ──
+// ── 전체 채널의 방송 여부 재확인 (1분 주기) ──
 function refreshLiveStatusAll() {
-  if (currentMain) updateOfflineNotice(colMain, currentMain.channelId, mainIframe);
-  document.querySelectorAll('.sub-tile').forEach(tile => {
-    updateOfflineNotice(tile, tile.dataset.channelId, tile._iframe);
+  channelBoxes.forEach((box, channelId) => {
+    updateOfflineNotice(box, channelId, box._iframe);
   });
 }
 
 // ── 대시보드 전체 로드 ──
 function loadDashboard() {
-  if (mainIframe && mainIframe.parentNode) {
-    mainIframe.parentNode.removeChild(mainIframe);
-    mainIframe = null;
-  }
-
   if (liveStatusTimer) {
     clearInterval(liveStatusTimer);
     liveStatusTimer = null;
   }
+
+  // 상자를 모두 버리고 새로 만든다. 방송이 다시 읽히므로 목록이 바뀔 때만 부른다.
+  channelBoxes.forEach(box => box.remove());
+  channelBoxes.clear();
 
   chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
     const list     = result.currentViewList || [];
@@ -148,460 +140,99 @@ function loadDashboard() {
     loadedViewList = list.map(s => s.channelId);
 
     streamerCountEl.textContent = list.length;
-
-    if (list.length === 0) {
-      showMainEmpty();
-      subStreamList.innerHTML = '<p class="sub-empty-msg">시청 목록이 비어 있습니다.<br><br>팝업에서<br>스트리머를 추가하세요.</p>';
-      return;
-    }
-
-    setMainPlayer(list[0]);
-
-    subStreamList.innerHTML = '';
-    if (list.length > 1) {
-      list.slice(1).forEach(s => subStreamList.appendChild(createSubTile(s)));
-    } else {
-      subStreamList.innerHTML = '<p class="sub-empty-msg">서브 채널이<br>없습니다.</p>';
-    }
+    emptyNotice.style.display = list.length === 0 ? 'flex' : 'none';
 
     applyAutoSync(settings);
     applyProfileDisplay(settings);
-    restoreLayoutState();
+
+    if (list.length === 0) {
+      layoutTree = null;
+      stageEl.querySelectorAll('.layout-handle').forEach(el => el.remove());
+      return;
+    }
+
+    list.forEach(streamer => {
+      const box = createChannelBox(streamer);
+      channelBoxes.set(streamer.channelId, box);
+      stageEl.appendChild(box);
+    });
+
+    readLayoutTree((saved) => {
+      layoutTree = syncLayoutWithList(saved, loadedViewList, getStageRect());
+      applyLayout();
+      saveLayoutTree();
+    });
 
     liveStatusTimer = setInterval(refreshLiveStatusAll, 60000);
   });
 }
 
-// ── 메인 플레이어 세팅 ──
-function setMainPlayer(streamer) {
-  currentMain = streamer;
+// ── 방송 화면 상자 만들기 ──
+// 한 번 만들면 화면 안에서 자리만 옮길 뿐, 다른 부모로 옮기지 않는다.
+function createChannelBox(streamer) {
+  const box = document.createElement('div');
+  box.className = 'cell-box';
+  // 자리가 정해지기 전까지는 감춰 둔다. 배치를 계산한 뒤 applyLayout이 펼친다.
+  box.style.display = 'none';
+  box.dataset.channelId = streamer.channelId;
+  box.dataset.name = streamer.name;
+  box.dataset.platform = streamer.platform || 'chzzk';
 
-  if (mainIframe && mainIframe.parentNode) {
-    mainIframe.parentNode.removeChild(mainIframe);
-  }
+  // 음소거하지 않은 채로 연다. 방송 페이지가 채널마다 기억해 둔 음량이 그대로 적용된다.
+  const iframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', false);
+  iframe.className = 'cell-frame';
+  box._iframe = iframe;
+  box._lastLatencyTime = Date.now();   // 자동 동기화가 첫 신호를 기다리는 기준 시각
+  box.appendChild(iframe);
+  box.appendChild(createCellOverlay(streamer, iframe, box));
 
-  mainIframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', false);
-  styleAsMain(mainIframe);
-  colMain.insertBefore(mainIframe, mainEmptyNotice);
-
-  mainEmptyNotice.style.display = 'none';
-  mainInfoBar.style.display = 'flex';
-  mainStreamerName.textContent = streamer.name;
-  setChatFrame(streamer);
-  colMain.appendChild(createInitNotice());
-  updateOfflineNotice(colMain, streamer.channelId, mainIframe);
-}
-
-// ── 빈 화면 상태 ──
-function showMainEmpty() {
-  currentMain = null;
-  if (mainIframe && mainIframe.parentNode) {
-    mainIframe.parentNode.removeChild(mainIframe);
-  }
-  mainIframe = null;
-  mainEmptyNotice.style.display = 'flex';
-  mainInfoBar.style.display = 'none';
-  chatFrame.style.display = 'none';
-  chatFrame.src = '';
-  chatEmptyNotice.style.display = 'flex';
-  chatStreamerLabel.textContent = '—';
-}
-
-// ── 서브 타일 오버레이 생성 ──
-function createSubOverlay(name, iframe, tile) {
-  const overlay = document.createElement('div');
-  overlay.className = 'sub-tile-overlay';
-  overlay.innerHTML = `
-    <div class="sub-tile-top">
-      <span class="sub-tile-name">${name}</span>
-    </div>
-    <div class="sub-controls">
-      <button class="btn-ctrl btn-mute-toggle" title="음소거 토글">🔇</button>
-      <input type="range" class="vol-slider" min="0" max="100" value="0" title="볼륨 조절">
-      <div class="sub-refresh-wrapper">
-        <span class="sub-latency-label"></span>
-        <button class="btn-ctrl btn-sub-refresh" title="새로고침">↻</button>
-      </div>
-      <button class="btn-ctrl btn-sub-zoom" title="영역 확대">⊞</button>
-      <button class="btn-ctrl btn-sub-zoom-reset" title="원래 화면으로" style="display:none">⊡</button>
-    </div>
-  `;
-
-  const btnMute = overlay.querySelector('.btn-mute-toggle');
-  const slider  = overlay.querySelector('.vol-slider');
-  let lastVol   = 50;
-
-  function updateSliderStyle() {
-    slider.style.setProperty('--pct', `${slider.value}%`);
-  }
-
-  // 서브는 볼륨이 0일 때 잠가 둔다. 방송 페이지가 스스로 음소거를 푸는 것을 막기 위함이다.
-  // 음소거할 때는 볼륨 수치를 함께 보내지 않는다. 0을 보내면 방송 페이지가 그 값을
-  // 저장해, 나중에 이 화면이 메인으로 올라올 때 볼륨 0으로 되살아난다.
-  function sendVol(pct) {
-    const msg = pct === 0
-      ? { type: 'chzzk-mv-audio', muted: true, lock: true }
-      : { type: 'chzzk-mv-audio', volume: pct / 100, muted: false, lock: false };
-    iframe.contentWindow?.postMessage(msg, '*');
-  }
-
-  function setMutedUI(muted) {
-    btnMute.textContent = muted ? '🔇' : '🔊';
-    btnMute.classList.toggle('unmuted', !muted);
-    slider.value = muted ? 0 : lastVol;
-    updateSliderStyle();
-  }
-
-  btnMute.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isMuted = parseInt(slider.value) === 0;
-    if (isMuted) { sendVol(lastVol); setMutedUI(false); }
-    else { lastVol = parseInt(slider.value); sendVol(0); setMutedUI(true); }
-  });
-
-  slider.addEventListener('input', (e) => {
-    e.stopPropagation();
-    const val = parseInt(slider.value);
-    sendVol(val);
-    updateSliderStyle();
-    if (val > 0) { lastVol = val; btnMute.textContent = '🔊'; btnMute.classList.add('unmuted'); }
-    else { btnMute.textContent = '🔇'; btnMute.classList.remove('unmuted'); }
-  });
-
-  // ── 영역 확대 ──
-  const btnZoom      = overlay.querySelector('.btn-sub-zoom');
-  const btnZoomReset = overlay.querySelector('.btn-sub-zoom-reset');
-  let isZoomed = false;
-  let zoomRegion = null;
-  let zoomResizeObserver = null;
-
-  function applyZoomTransform(tw, th) {
-    const rx = zoomRegion.rxPct * tw;
-    const ry = zoomRegion.ryPct * th;
-    const rw = zoomRegion.rwPct * tw;
-    const rh = zoomRegion.rhPct * th;
-    const s = Math.min(tw / rw, th / rh);
-    const offsetX = (tw - rw * s) / 2;
-    const offsetY = (th - rh * s) / 2;
-    iframe.style.transformOrigin = '0 0';
-    iframe.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${s}) translate(${-rx}px,${-ry}px)`;
-  }
-
-  // tileDx/tileDy/tileDw/tileDh: 드래그 선택 좌표 (항상 타일 픽셀 기준)
-  // 이미 확대 중이면 현재 transform의 역변환으로 원본 iframe 좌표로 매핑
-  function applyZoom(tileDx, tileDy, tileDw, tileDh) {
-    const tw = tile.clientWidth;
-    const th = tile.clientHeight;
-
-    let iframeRx, iframeRy, iframeRw, iframeRh;
-
-    if (isZoomed && zoomRegion) {
-      const origRx = zoomRegion.rxPct * tw;
-      const origRy = zoomRegion.ryPct * th;
-      const origRw = zoomRegion.rwPct * tw;
-      const origRh = zoomRegion.rhPct * th;
-      const s = Math.min(tw / origRw, th / origRh);
-      const offsetX = (tw - origRw * s) / 2;
-      const offsetY = (th - origRh * s) / 2;
-
-      function tileToIframe(px, py) {
-        return {
-          x: (px - offsetX) / s + origRx,
-          y: (py - offsetY) / s + origRy
-        };
-      }
-      const p1 = tileToIframe(tileDx, tileDy);
-      const p2 = tileToIframe(tileDx + tileDw, tileDy + tileDh);
-
-      iframeRx = Math.min(p1.x, p2.x);
-      iframeRy = Math.min(p1.y, p2.y);
-      iframeRw = Math.abs(p1.x - p2.x);
-      iframeRh = Math.abs(p1.y - p2.y);
-    } else {
-      iframeRx = tileDx;
-      iframeRy = tileDy;
-      iframeRw = tileDw;
-      iframeRh = tileDh;
-    }
-
-    zoomRegion = { rxPct: iframeRx / tw, ryPct: iframeRy / th, rwPct: iframeRw / tw, rhPct: iframeRh / th };
-    applyZoomTransform(tw, th);
-    isZoomed = true;
-    btnZoomReset.style.display = '';
-
-    if (!zoomResizeObserver) {
-      zoomResizeObserver = new ResizeObserver(() => {
-        if (isZoomed && zoomRegion) applyZoomTransform(tile.clientWidth, tile.clientHeight);
-      });
-      zoomResizeObserver.observe(tile);
-    }
-  }
-
-  function resetZoom() {
-    iframe.style.transform = '';
-    iframe.style.transformOrigin = '';
-    isZoomed = false;
-    zoomRegion = null;
-    if (zoomResizeObserver) { zoomResizeObserver.disconnect(); zoomResizeObserver = null; }
-    btnZoomReset.style.display = 'none';
-  }
-
-  function startDragSelect() {
-    const dragOverlay = document.createElement('div');
-    dragOverlay.className = 'zoom-drag-overlay';
-
-    const hint = document.createElement('div');
-    hint.className = 'zoom-drag-hint';
-    hint.textContent = '확대할 영역을 드래그하세요 · ESC로 취소';
-    dragOverlay.appendChild(hint);
-
-    const selRect = document.createElement('div');
-    selRect.className = 'zoom-drag-rect';
-    selRect.style.display = 'none';
-    dragOverlay.appendChild(selRect);
-
-    tile.appendChild(dragOverlay);
-
-    let startX = 0, startY = 0, dragging = false;
-
-    function getPos(e) {
-      const b = dragOverlay.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - b.left, b.width));
-      const y = Math.max(0, Math.min(e.clientY - b.top,  b.height));
-      return { x, y };
-    }
-
-    function cancel() {
-      dragOverlay.remove();
-      document.body.style.userSelect = '';
-      document.removeEventListener('keydown', onKeydown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    }
-
-    function onKeydown(e) {
-      if (e.key === 'Escape') cancel();
-    }
-    document.addEventListener('keydown', onKeydown);
-
-    dragOverlay.addEventListener('mousedown', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      document.body.style.userSelect = 'none';
-      const p = getPos(e);
-      startX = p.x; startY = p.y;
-      dragging = true;
-      hint.style.display = 'none';
-      selRect.style.display = 'block';
-      selRect.style.left = startX + 'px';
-      selRect.style.top = startY + 'px';
-      selRect.style.width = '0';
-      selRect.style.height = '0';
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    });
-
-    function onMouseMove(e) {
-      const p = getPos(e);
-      const x = Math.min(startX, p.x), y = Math.min(startY, p.y);
-      const w = Math.abs(p.x - startX),  h = Math.abs(p.y - startY);
-      selRect.style.left = x + 'px';
-      selRect.style.top  = y + 'px';
-      selRect.style.width  = w + 'px';
-      selRect.style.height = h + 'px';
-    }
-
-    function onMouseUp(e) {
-      if (!dragging) return;
-      dragging = false;
-      const p = getPos(e);
-      const tw = tile.clientWidth, th = tile.clientHeight;
-      const rx = Math.min(startX, p.x), ry = Math.min(startY, p.y);
-      const rw = Math.abs(p.x - startX),  rh = Math.abs(p.y - startY);
-
-      cancel();
-
-      if (rw < tw * 0.05 || rh < th * 0.05) {
-        const msg = document.createElement('div');
-        msg.className = 'zoom-cancel-msg';
-        msg.textContent = '선택 영역이 너무 작습니다';
-        tile.appendChild(msg);
-        setTimeout(() => msg.remove(), 1500);
-        return;
-      }
-
-      applyZoom(rx, ry, rw, rh);
-    }
-  }
-
-  btnZoom.addEventListener('click', (e) => {
-    e.stopPropagation();
-    startDragSelect();
-  });
-
-  btnZoomReset.addEventListener('click', (e) => {
-    e.stopPropagation();
-    resetZoom();
-  });
-
-  overlay.querySelector('.btn-sub-refresh').addEventListener('click', (e) => {
-    e.stopPropagation();
-    resetZoom();
-    tile.querySelector('.init-notice')?.remove();
-    tile.querySelector('.manual-wide-notice')?.remove();
-    tile.appendChild(createInitNotice());
-    iframe.dataset.muted = '1';
-    iframe.src = buildIframeSrc(iframe);
-    lastVol = 50;
-    setMutedUI(true);
-  });
-
-  updateSliderStyle();
-  return overlay;
-}
-
-// ── 서브 타일 드래그 순서 변경 ──
-let subDragIndicator = null;
-
-function clearSubDragIndicator() {
-  subDragIndicator?.remove();
-  subDragIndicator = null;
-}
-
-function updateSubDragIndicator(mouseX, mouseY, dragTile) {
-  clearSubDragIndicator();
-
-  const layout = document.querySelector('.layout-wrapper')?.dataset.layout || '1';
-  const isHorizontal = layout === '3' || layout === '4';
-  const tiles = [...subStreamList.querySelectorAll('.sub-tile')].filter(t => t !== dragTile);
-
-  subDragIndicator = document.createElement('div');
-  subDragIndicator.className = 'sub-drag-indicator';
-
-  let insertBefore = null;
-  for (const t of tiles) {
-    const rect = t.getBoundingClientRect();
-    const mid = isHorizontal ? rect.left + rect.width / 2 : rect.top + rect.height / 2;
-    if ((isHorizontal ? mouseX : mouseY) < mid) { insertBefore = t; break; }
-  }
-
-  if (insertBefore) subStreamList.insertBefore(subDragIndicator, insertBefore);
-  else subStreamList.appendChild(subDragIndicator);
-}
-
-// 메인은 저장소가 아니라 현재 화면 기준(currentMain)으로 잡는다.
-// 스왑은 화면만 바꾸므로, 스왑 후에는 저장소의 0번이 이미 옛 메인이다.
-function saveViewListFromScreen() {
-  if (!currentMain) return;
-  const list = [
-    {
-      channelId: currentMain.channelId,
-      name: currentMain.name,
-      platform: currentMain.platform || 'chzzk'
-    },
-    ...[...subStreamList.querySelectorAll('.sub-tile')].map(t => ({
-      channelId: t.dataset.channelId,
-      name: t.dataset.name,
-      platform: t.dataset.platform || 'chzzk'
-    }))
-  ];
-  loadedViewList = list.map(s => s.channelId);
-  chrome.storage.local.set({ currentViewList: list });
-}
-
-// ── 서브 타일 생성 ──
-function createSubTile(streamer) {
-  const tile = document.createElement('div');
-  tile.className = 'sub-tile';
-  tile.dataset.channelId = streamer.channelId;
-  tile.dataset.name = streamer.name;
-  tile.dataset.platform = streamer.platform || 'chzzk';
-
-  const iframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', true);
-  styleAsSub(iframe);
-  tile._iframe = iframe;
-  tile.appendChild(iframe);
-  tile.appendChild(createSubOverlay(streamer.name, iframe, tile));
-
+  // 닫기 버튼은 조작 줄의 가장 오른쪽에 붙인다
   const btnRemove = document.createElement('button');
-  btnRemove.className = 'btn-sub-remove';
-  btnRemove.title = '서브채널 삭제';
+  btnRemove.className = 'cell-tool-btn btn-cell-remove';
+  btnRemove.title = '이 채널 닫기';
   btnRemove.textContent = '✕';
   btnRemove.addEventListener('click', (e) => {
     e.stopPropagation();
-    const channelId = tile.dataset.channelId;
-    chrome.storage.local.get(['currentViewList'], (result) => {
-      const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
-      loadedViewList = list.map(s => s.channelId);
-      chrome.storage.local.set({ currentViewList: list }, () => {
-        tile.remove();
-        streamerCountEl.textContent = list.length;
-        if (list.length <= 1) {
-          subStreamList.innerHTML = '<p class="sub-empty-msg">서브 채널이<br>없습니다.</p>';
-        }
-      });
-    });
+    removeChannelFromDashboard(streamer.channelId);
   });
-  tile.appendChild(btnRemove);
+  box.querySelector('.cell-toolbar').appendChild(btnRemove);
 
   const nameTag = document.createElement('div');
-  nameTag.className = 'sub-tile-name-tag';
+  nameTag.className = 'cell-name-tag';
   nameTag.textContent = streamer.name;
-  tile.appendChild(nameTag);
+  box.appendChild(nameTag);
 
-  tile.appendChild(createInitNotice());
-  updateOfflineNotice(tile, streamer.channelId, iframe);
+  box.appendChild(createInitNotice());
+  updateOfflineNotice(box, streamer.channelId, iframe);
 
   fetchChannelImage(streamer.channelId, streamer.platform || 'chzzk', (imageUrl) => {
-    if (imageUrl) tile.appendChild(createSubProfileImg(imageUrl, tile));
+    if (imageUrl) box.appendChild(createCellProfileImg(imageUrl, box));
   });
 
-  tile.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    if (e.target.closest('.sub-controls') || e.target.closest('.btn-sub-remove') || e.target.closest('.zoom-drag-overlay')) return;
+  return box;
+}
 
-    const startX = e.clientX, startY = e.clientY;
-    let isDragging = false;
+// ── 채널 하나 닫기 ──
+// 시청 목록에서 빼고, 그 칸이 있던 자리는 형제 칸이 흡수한다.
+function removeChannelFromDashboard(channelId) {
+  chrome.storage.local.get(['currentViewList'], (result) => {
+    const list = (result.currentViewList || []).filter(s => s.channelId !== channelId);
+    loadedViewList = list.map(s => s.channelId);
 
-    function onMouseMove(mv) {
-      if (!isDragging && (Math.abs(mv.clientX - startX) > 5 || Math.abs(mv.clientY - startY) > 5)) {
-        isDragging = true;
-        tile.classList.add('sub-tile-dragging');
-        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'grabbing';
-      }
-      if (isDragging) updateSubDragIndicator(mv.clientX, mv.clientY, tile);
-    }
+    chrome.storage.local.set({ currentViewList: list }, () => {
+      channelBoxes.get(channelId)?.remove();
+      channelBoxes.delete(channelId);
+      streamerCountEl.textContent = list.length;
 
-    function onMouseUp(mu) {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-
-      if (isDragging) {
-        tile.classList.remove('sub-tile-dragging');
-        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = '');
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        if (subDragIndicator?.parentNode) subDragIndicator.parentNode.insertBefore(tile, subDragIndicator);
-        clearSubDragIndicator();
-        saveViewListFromScreen();
-        tile.querySelector('.init-notice')?.remove();
-        tile.querySelector('.manual-wide-notice')?.remove();
-        tile.appendChild(createInitNotice());
-        tile._iframe?.contentWindow?.postMessage({ type: 'chzzk-mv-retrigger-wide' }, '*');
+      layoutTree = removeLayoutChannel(layoutTree, channelId);
+      if (layoutTree) {
+        applyLayout();
+        saveLayoutTree();
       } else {
-        if (!mu.target.closest('.sub-controls') && !mu.target.closest('.btn-sub-remove')) {
-          if (!colMain.querySelector('.init-notice') && !tile.querySelector('.init-notice')) {
-            swapWithMain(tile, { channelId: tile.dataset.channelId, name: tile.dataset.name, platform: tile.dataset.platform || 'chzzk' });
-          }
-        }
+        stageEl.querySelectorAll('.layout-handle').forEach(el => el.remove());
+        chrome.storage.local.remove('dashboardLayoutTree');
       }
-    }
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+      emptyNotice.style.display = list.length === 0 ? 'flex' : 'none';
+    });
   });
-
-  return tile;
 }
