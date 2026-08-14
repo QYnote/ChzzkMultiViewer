@@ -18,7 +18,7 @@ function saveFavoriteTree(tree, callback) {
 
 // ── 스토리지 로드 및 전체 화면 렌더링 ──
 function loadAndRenderData() {
-  chrome.storage.local.get(['currentViewList', 'systemSettings', 'dashboardLayout'], (result) => {
+  chrome.storage.local.get(['currentViewList', 'systemSettings'], (result) => {
     const currentList = result.currentViewList || [];
 
     const settings = result.systemSettings || { isAutoSync: true, limitSeconds: 10, profileDisplay: 'hover-name' };
@@ -29,11 +29,6 @@ function loadAndRenderData() {
     if (chkAutoSync) chkAutoSync.checked = settings.isAutoSync;
     if (numLimitSeconds) numLimitSeconds.value = settings.limitSeconds;
     if (selProfileDisplay) selProfileDisplay.value = settings.profileDisplay || 'hover-name';
-
-    const activeLayout = result.dashboardLayout || 1;
-    document.querySelectorAll('.layout-opt').forEach(opt => {
-      opt.classList.toggle('active', parseInt(opt.dataset.layout) === activeLayout);
-    });
 
     getFavoriteTree((tree) => {
       const allFavIds = collectAllChannelIds(tree);
@@ -54,17 +49,6 @@ function deleteStreamer(type, index) {
   });
 }
 
-// ── 메인으로 설정 ──
-function setAsMain(index) {
-  chrome.storage.local.get(['currentViewList'], (result) => {
-    const list = result.currentViewList || [];
-    if (index <= 0 || index >= list.length) return;
-    const [item] = list.splice(index, 1);
-    list.unshift(item);
-    chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
-  });
-}
-
 // ── 시청 목록 순서 변경 ──
 function moveStreamer(index, direction) {
   chrome.storage.local.get(['currentViewList'], (result) => {
@@ -76,14 +60,14 @@ function moveStreamer(index, direction) {
   });
 }
 
-// ── 시청 목록 순서 변경 (드래그앤드롭, 서브 채널 전용) ──
+// ── 시청 목록 순서 변경 (드래그앤드롭) ──
 function reorderWatchlist(fromIndex, targetChannelId, pos) {
   chrome.storage.local.get(['currentViewList'], (result) => {
     const list = result.currentViewList || [];
-    if (fromIndex <= 0 || fromIndex >= list.length) return; // 메인(0번)은 이 경로로 이동 불가
+    if (fromIndex < 0 || fromIndex >= list.length) return;
     const [moved] = list.splice(fromIndex, 1);
     const toIdx = list.findIndex(s => s.channelId === targetChannelId);
-    if (toIdx === -1 || toIdx === 0) { list.splice(fromIndex, 0, moved); return; }
+    if (toIdx === -1) { list.splice(fromIndex, 0, moved); return; }
     list.splice(pos === 'before' ? toIdx : toIdx + 1, 0, moved);
     chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
   });

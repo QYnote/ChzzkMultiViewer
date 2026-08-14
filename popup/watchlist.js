@@ -10,53 +10,21 @@ function setMiniButtonStyle(btn, bgColor) {
   btn.style.width = 'auto';
 }
 
-// ── 시청 목록 드래그 상태 (메인 화면 고정 박스 / 서브 목록 재정렬 공용) ──
+// ── 시청 목록 드래그 상태 (순서 변경용) ──
 let wlDragIndex = null;
 
-// ── 메인 화면 고정 박스 드롭 이벤트 (재렌더링과 무관하게 최초 1회만 등록) ──
-if (mainScreenSlotDiv) {
-  mainScreenSlotDiv.addEventListener('dragover', (e) => {
-    if (wlDragIndex === null) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    mainScreenSlotDiv.classList.add('drag-over');
-  });
-  mainScreenSlotDiv.addEventListener('dragleave', () => mainScreenSlotDiv.classList.remove('drag-over'));
-  mainScreenSlotDiv.addEventListener('drop', (e) => {
-    e.preventDefault();
-    mainScreenSlotDiv.classList.remove('drag-over');
-    if (wlDragIndex === null) return;
-    setAsMain(wlDragIndex);
-    wlDragIndex = null;
-  });
-}
-
-// ── 시청 목록: 메인 화면 고정 박스 / 서브 목록 분리 렌더링 ──
+// ── 시청 목록 렌더링 ──
+// 모든 채널이 동등하다. 대시보드가 채널마다 칸 하나를 주므로 목록에서는 순서만 정한다.
 function renderWatchlist(container, list, favoriteList) {
   if (!container) return;
   container.innerHTML = '';
-  if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '';
 
   if (list.length === 0) {
     container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 시청 스트리머가 없습니다.</p>';
-    if (mainScreenSlotDiv) mainScreenSlotDiv.innerHTML = '<p style="color:#999; text-align:center; margin:4px 0; font-size:11px;">메인 채널 없음</p>';
     return;
   }
 
-  // 메인 화면 (0번) — 고정 박스, 드롭 시 setAsMain 교체
-  if (mainScreenSlotDiv) {
-    mainScreenSlotDiv.appendChild(buildStreamerItem(list[0], 0, list, favoriteList));
-  }
-
-  // 서브 채널 (1번~) — 드래그 재정렬 가능
-  const subList = list.slice(1);
-  if (subList.length === 0) {
-    container.innerHTML = '<p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">등록된 서브 채널이 없습니다.</p>';
-    return;
-  }
-
-  subList.forEach((streamer, subIdx) => {
-    const index = subIdx + 1;
+  list.forEach((streamer, index) => {
     const itemDiv = buildStreamerItem(streamer, index, list, favoriteList);
     itemDiv.draggable = true;
     itemDiv.style.cursor = 'grab';
@@ -171,18 +139,6 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
 
     const menuItemBase = 'padding:7px 12px; font-size:11px; white-space:nowrap;';
 
-    // ▶ 메인으로 지정
-    const itemMain = document.createElement('div');
-    itemMain.style.cssText = menuItemBase + (index === 0 ? 'color:#ccc; cursor:default;' : 'color:#333; cursor:pointer;');
-    itemMain.textContent = '▶ 메인으로 지정';
-    if (index !== 0) {
-      itemMain.addEventListener('mouseenter', () => itemMain.style.background = '#f5f5f5');
-      itemMain.addEventListener('mouseleave', () => itemMain.style.background = '');
-      itemMain.addEventListener('click', (e) => { e.stopPropagation(); setAsMain(index); menu.remove(); });
-    }
-
-    menu.appendChild(itemMain);
-
     // ☆ 즐겨찾기 추가 (이미 등록된 항목은 표시 안 함)
     const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
     if (!inFav) {
@@ -194,6 +150,9 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
       itemFav.addEventListener('click', (e) => { e.stopPropagation(); addToFavorite(streamer); menu.remove(); });
       menu.appendChild(itemFav);
     }
+
+    // 보여 줄 항목이 하나도 없으면 빈 상자만 뜨므로 아예 열지 않는다
+    if (menu.childElementCount === 0) return;
 
     document.body.appendChild(menu);
 
