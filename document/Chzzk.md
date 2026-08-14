@@ -19,12 +19,10 @@
 | 용도 | 주소 |
 |---|---|
 | 방송 화면 | `https://chzzk.naver.com/live/{채널ID}` |
-| 채팅 | `https://chzzk.naver.com/live/{채널ID}/chat` |
 | 팔로잉 목록 | `https://api.chzzk.naver.com/service/v1/channels/followings` |
 | 생방송 상태·프로필 사진 | `https://api.chzzk.naver.com/service/v1/channels/{채널ID}` |
 
-- 방송 화면 주소에는 확장 프로그램이 만든 화면임을 알리는 표시와 음소거 여부를 함께 붙인다.
-- 채팅 주소를 만들 수 있지만 **지금은 쓰이지 않는다.** 대시보드에 채팅 영역이 없다.
+- 방송 화면 주소에는 확장 프로그램이 만든 화면임을 알리는 표시를 붙인다.
 
 ### 로그인 판단과 인증 쿠키
 

@@ -6,8 +6,6 @@
   // 확장프로그램이 로드한 iframe에서만 동작
   if (!params.has('mv_ext')) return;
 
-  let forceMuted = params.get('mute') === '1';
-
   // ── 딜레이 측정 ──
   let latencyTimer = null;
 
@@ -15,12 +13,6 @@
     if (latencyTimer) return;
     latencyTimer = setInterval(() => {
       try {
-        // 현재 볼륨을 주기적으로 보고한다. 볼륨 변경 이벤트만 의존하면,
-        // 플레이어가 저장된 볼륨을 복원하는 시점이 감시자를 붙이는 시점보다
-        // 빠를 때 그 값을 놓쳐 부모가 볼륨을 모르는 채로 남는다.
-        if (!forceMuted) {
-          window.parent.postMessage({ type: 'chzzk-mv-vol', v: v.volume, muted: v.muted }, '*');
-        }
         if (v.seekable.length > 0) {
           const liveEdge = v.seekable.end(v.seekable.length - 1);
           const latency  = liveEdge - v.currentTime;
@@ -32,71 +24,27 @@
     }, 1000);
   }
 
-  // ── 볼륨 적용 ──
+  // ── 영상 하나를 맡을 때 하는 일 ──
   const guardedVideos = new WeakSet();
 
-  // 음소거 여부는 항상 반영하고, 볼륨 수치는 명시적으로 지정됐을 때만 건드린다.
-  // 볼륨을 임의로 덮어쓰면 방송 페이지가 그 값을 자기 상태로 저장해, 다시 로드될 때
-  // 페이지에 보이는 상태와 실제 소리가 어긋난다.
-  function applyAudio(v, vol, muted) {
-    v.muted = muted;
-    if (!muted && typeof vol === 'number') v.volume = vol;
-  }
-
-  // 음소거 여부만 제어 (볼륨 수치는 건드리지 않음 — 치지직에 저장된 기존 볼륨 유지)
-  function setMuted(v, muted) {
-    v.muted = muted;
-  }
-
   function handleVideo(v) {
-    if (!guardedVideos.has(v)) {
-      guardedVideos.add(v);
+    if (guardedVideos.has(v)) return;
+    guardedVideos.add(v);
 
-      v.addEventListener('volumechange', () => {
-        if (forceMuted && !v.muted) {
-          setMuted(v, true);
-        } else if (!forceMuted) {
-          try {
-            window.parent.postMessage({ type: 'chzzk-mv-vol', v: v.volume, muted: v.muted }, '*');
-          } catch (err) {}
-        }
-      }, true);
+    // 방송 페이지는 자동 재생 차단을 피하려고 음소거로 시작하기도 한다.
+    // 한 번 풀어 주기만 하고 크기는 건드리지 않는다. 크기를 덮어쓰면 방송 페이지가
+    // 그 값을 채널별 상태로 저장해, 다시 불러올 때 화면에 보이는 상태와 어긋난다.
+    v.muted = false;
 
-      setMuted(v, forceMuted);
-      startLatencyReporting(v);
+    startLatencyReporting(v);
 
-      // 영상을 확보했음을 부모에 알린다. 부모는 이 신호를 받고 볼륨을 지정한다.
-      // iframe을 다른 부모로 옮기면 문서가 다시 로드되면서 이 신호도 다시 나가므로,
-      // 옮기는 도중에 사라진 볼륨 지정이 이 시점에 복구된다.
-      try {
-        window.parent.postMessage({ type: 'chzzk-mv-ready' }, '*');
-      } catch (err) {}
-
-      const onPlaying = () => setTimeout(triggerWideMode, 2000);
-      if (!v.paused && v.currentTime > 0) {
-        onPlaying();
-      } else {
-        v.addEventListener('playing', onPlaying, { once: true });
-      }
-    } else if (forceMuted) {
-      setMuted(v, true);
+    const onPlaying = () => setTimeout(triggerWideMode, 2000);
+    if (!v.paused && v.currentTime > 0) {
+      onPlaying();
+    } else {
+      v.addEventListener('playing', onPlaying, { once: true });
     }
   }
-
-  // ── postMessage: 볼륨 제어 ──
-  window.addEventListener('message', ({ data }) => {
-    if (!data || data.type !== 'chzzk-mv-audio') return;
-
-    // lock — 이 화면을 계속 음소거로 붙잡아 둘지 여부. 서브 화면에만 쓴다.
-    // 볼륨 0과 잠금을 분리해야, 메인 볼륨이 0이어도 사용자가 직접 풀 수 있다.
-    forceMuted = !!data.lock;
-
-    const muted = typeof data.muted === 'boolean' ? data.muted : forceMuted;
-    const vol = typeof data.volume === 'number'
-      ? Math.max(0, Math.min(1, data.volume))
-      : undefined;
-    document.querySelectorAll('video').forEach(v => applyAudio(v, vol, muted));
-  });
 
   // ── 플랫폼 감지 ──
   const isSoop = window.location.hostname === 'play.sooplive.com';
@@ -143,17 +91,6 @@
       }
     }, 300);
   }
-
-  // ── postMessage: 와이드 모드 재시도 (메인↔서브 스왑 시) ──
-  window.addEventListener('message', ({ data }) => {
-    if (!data || data.type !== 'chzzk-mv-retrigger-wide') return;
-    if (wideModeTimer) {
-      clearInterval(wideModeTimer);
-      wideModeTimer = null;
-    }
-    wideModeTriggered = false;
-    triggerWideMode();
-  });
 
   // ── 탭 복귀 시 와이드 모드 재시도 ──
   // 비활성 탭에서는 pressT()가 동작하지 않아 와이드 모드 전환이 실패할 수 있음
