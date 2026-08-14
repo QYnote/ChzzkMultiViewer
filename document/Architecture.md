@@ -15,7 +15,7 @@
 |---|---|---|
 | [Background](Background.md) | Service Worker | 로그인 세션 쿠키 주입, 팔로잉/생방송 상태 API 대리 호출 |
 | [Popup](Popup.md) | 팝업 페이지 | 시청 목록·즐겨찾기·설정 관리, 대시보드 열기 |
-| [Dashboard](Dashboard.md) | 대시보드 탭 | 멀티뷰 화면 조립, 스왑, 자동 동기화, 레이아웃 |
+| [Dashboard](Dashboard.md) | 대시보드 탭 | 멀티뷰 화면 조립, 칸 배치, 자동 동기화 |
 | [Platforms](Platforms.md) | Background · Dashboard에 각각 로드되는 공유 라이브러리 | 치지직/SOOP 차이를 동일 인터페이스로 흡수 |
 
 - 방송 페이지 iframe 안에서 도는 [ContentScript](ContentScript.md)도 별도 실행 컨텍스트이지만, Dashboard가 만든 iframe 안에서만 동작하고 Dashboard와만 대화하므로 [Dashboard](Dashboard.md)의 하위 문서로 둔다. 다만 SOOP MAIN 월드 스크립트를 등록하는 쪽은 Background다.
@@ -79,10 +79,10 @@ sequenceDiagram
   U->>P: 멀티뷰 대시보드 열기
   alt 대시보드 미실행
     P->>D: 새 탭 생성
-    D->>S: 시청 목록 읽기 → 메인/서브 화면 구성
+    D->>S: 시청 목록·저장된 배치 읽기 → 칸 구성
   else 대시보드 실행 중
     P->>D: 변경 반영 요청
-    D->>S: 시청 목록 다시 읽기 → 바뀐 부분만 반영
+    D->>D: 담긴 채널 비교 → 달라졌을 때만 다시 구성
   end
 ```
 
@@ -94,12 +94,11 @@ Popup과 Dashboard가 직접 연결되어 있지 않을 때도 브라우저 저�
 
 | 저장하는 것 | 내용 | 주로 쓰는 쪽 |
 |---|---|---|
-| 시청 목록 | 시청 중인 채널 순서. **맨 앞이 메인** | Popup(읽기·쓰기) · Dashboard(읽기 + 교체·순서 변경·삭제 시 쓰기) |
+| 시청 목록 | 띄울 채널 목록. **순서는 첫 배치를 만들 때만 쓴다** | Popup(읽기·쓰기) · Dashboard(읽기 + 칸을 닫을 때 쓰기) |
 | 즐겨찾기 트리 | 폴더 구조로 보관한 채널 | Popup |
 | 구 형식 즐겨찾기 | 예전 버전이 남긴 목록. 트리가 없을 때만 읽어 트리로 옮긴다 | Popup(읽기) |
-| 시스템 설정 | 자동 동기화 여부·기준 시간·서브 정보 표시 방식. 읽을 때 예전 형식 값을 현재 체계로 바꾼다 | Popup(쓰기) · Dashboard(읽기, 변경 시 실시간 반영) |
-| 대시보드 배치 | 선택한 배치 종류 | Popup(쓰기) · Dashboard(읽기) |
-| 화면 상태 | 채팅 숨김 여부, 서브 영역 접힘·높이 | Dashboard |
+| 시스템 설정 | 자동 동기화 여부·기준 시간·채널 정보 표시 방식. 읽을 때 예전 형식 값을 현재 체계로 바꾼다 | Popup(쓰기) · Dashboard(읽기, 변경 시 실시간 반영) |
+| 대시보드 배치 | 칸 구조와 비율 | Dashboard(읽기·쓰기) |
 
 ### 기술 스택
 
@@ -130,13 +129,16 @@ source/
 │   ├── watchlist.js       시청 목록 렌더링, 직접 추가 이벤트
 │   ├── favorite-tree.js   즐겨찾기 폴더 트리 렌더링 및 드래그앤드롭
 │   ├── following.js       팔로잉 목록 불러오기 및 렌더링
-│   └── settings.js        설정 저장, 레이아웃 선택 이벤트
+│   └── settings.js        설정 저장
 ├── dashboard.html         [Dashboard] 멀티뷰 대시보드 UI
 ├── dashboard/
-│   ├── main.js            DOM 초기화, 공유 상태, 버튼 이벤트, 딜레이 수신
-│   ├── player.js          iframe 생성, 메인/서브 플레이어, 서브 타일 생성
-│   ├── control.js         메인 ↔ 서브 스왑, 자동 동기화, 레이아웃/패널 접기
-│   └── chat.js            채팅 iframe 세팅 및 숨김 상태 복원
+│   ├── main.js            DOM 초기화, 공유 상태, 방송 화면 소식 수신
+│   ├── layout-tree.js     배치 트리 계산 (자동 배치, 칸 추가/제거/교환, 좌표, 비율)
+│   ├── layout-view.js     배치를 화면에 반영, 경계 드래그, 배치 저장
+│   ├── layout-drag.js     손잡이 드래그로 자리 옮기기·쪼개기
+│   ├── panel.js           칸 조작 줄과 메뉴, 영역 확대
+│   ├── player.js          iframe 생성, 칸 상자 생성, 생방송 조회, 안내
+│   └── control.js         자동 동기화, 채널 표시 방식
 └── resources/
     ├── main_icon_16.png   툴바 아이콘
     ├── main_icon_32.png   HiDPI 툴바 아이콘

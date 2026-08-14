@@ -58,13 +58,16 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   actionGroup.style.display = 'flex';
   actionGroup.style.gap = '4px';
 
-  // ★ 즐겨찾기 — 팔로잉 목록과 같은 방식. 이미 등록되어 있으면 노란 별로 두고 잠근다
+  // ★ 즐겨찾기 — 등록만 되고 해제는 되지 않는다.
+  // 이미 등록된 항목은 노란 별로 표시만 하고 잠근다. 해제는 즐겨찾기 목록에서 한다.
   const inFav = (favoriteList || []).some(s => s.channelId === streamer.channelId);
   const btnFav = document.createElement('button');
   btnFav.textContent = inFav ? '★' : '☆';
-  btnFav.title = inFav ? '이미 즐겨찾기에 있습니다' : '즐겨찾기 추가';
+  btnFav.title = inFav ? '즐겨찾기에 있습니다 (해제는 즐겨찾기 목록에서)' : '즐겨찾기 추가';
   setMiniButtonStyle(btnFav, inFav ? '#e6a817' : '#bbb');
   btnFav.disabled = inFav;
+  btnFav.style.padding = '3px 0';
+  btnFav.style.width = '24px';
   if (!inFav) {
     btnFav.addEventListener('click', (e) => {
       e.stopPropagation();

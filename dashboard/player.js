@@ -1,14 +1,12 @@
 // ── 방송 화면 만들기 ──
 function buildIframeSrc(iframe) {
-  const muted = iframe.dataset.muted === '1';
-  return getPlatform(iframe.dataset.platform).buildStreamUrl(iframe.dataset.channelId, muted);
+  return getPlatform(iframe.dataset.platform).buildStreamUrl(iframe.dataset.channelId);
 }
 
-function createIframe(channelId, platform, muted) {
+function createIframe(channelId, platform) {
   const iframe = document.createElement('iframe');
   iframe.dataset.channelId = channelId;
   iframe.dataset.platform = platform || 'chzzk';
-  iframe.dataset.muted = muted ? '1' : '0';
   iframe.src = buildIframeSrc(iframe);
   iframe.setAttribute('allowfullscreen', '');
   iframe.setAttribute('allow', 'autoplay; encrypted-media');
@@ -178,8 +176,8 @@ function createChannelBox(streamer) {
   box.dataset.name = streamer.name;
   box.dataset.platform = streamer.platform || 'chzzk';
 
-  // 음소거하지 않은 채로 연다. 방송 페이지가 채널마다 기억해 둔 음량이 그대로 적용된다.
-  const iframe = createIframe(streamer.channelId, streamer.platform || 'chzzk', false);
+  // 음량은 지정하지 않는다. 방송 페이지가 채널마다 기억해 둔 크기가 그대로 적용된다.
+  const iframe = createIframe(streamer.channelId, streamer.platform || 'chzzk');
   iframe.className = 'cell-frame';
   box._iframe = iframe;
   box._lastLatencyTime = Date.now();   // 자동 동기화가 첫 신호를 기다리는 기준 시각
