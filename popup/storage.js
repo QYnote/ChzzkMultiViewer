@@ -49,29 +49,6 @@ function deleteStreamer(type, index) {
   });
 }
 
-// ── 시청 목록 순서 변경 ──
-function moveStreamer(index, direction) {
-  chrome.storage.local.get(['currentViewList'], (result) => {
-    const list = result.currentViewList || [];
-    const target = index + direction;
-    if (target < 0 || target >= list.length) return;
-    [list[index], list[target]] = [list[target], list[index]];
-    chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
-  });
-}
-
-// ── 시청 목록 순서 변경 (드래그앤드롭) ──
-function reorderWatchlist(fromIndex, targetChannelId, pos) {
-  chrome.storage.local.get(['currentViewList'], (result) => {
-    const list = result.currentViewList || [];
-    if (fromIndex < 0 || fromIndex >= list.length) return;
-    const [moved] = list.splice(fromIndex, 1);
-    const toIdx = list.findIndex(s => s.channelId === targetChannelId);
-    if (toIdx === -1) { list.splice(fromIndex, 0, moved); return; }
-    list.splice(pos === 'before' ? toIdx : toIdx + 1, 0, moved);
-    chrome.storage.local.set({ currentViewList: list }, () => loadAndRenderData());
-  });
-}
 
 // ── 시청목록 → 즐겨찾기 추가 (Root에 추가) ──
 function addToFavorite(streamer) {

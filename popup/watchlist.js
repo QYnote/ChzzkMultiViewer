@@ -10,11 +10,9 @@ function setMiniButtonStyle(btn, bgColor) {
   btn.style.width = 'auto';
 }
 
-// ── 시청 목록 드래그 상태 (순서 변경용) ──
-let wlDragIndex = null;
-
 // ── 시청 목록 렌더링 ──
-// 모든 채널이 동등하다. 대시보드가 채널마다 칸 하나를 주므로 목록에서는 순서만 정한다.
+// 모든 채널이 동등하고 화면상의 자리는 대시보드가 기억한다. 그래서 이 목록에는
+// 순서라는 개념이 없다. 어떤 채널을 띄울지만 정하는 자리다.
 function renderWatchlist(container, list, favoriteList) {
   if (!container) return;
   container.innerHTML = '';
@@ -25,36 +23,7 @@ function renderWatchlist(container, list, favoriteList) {
   }
 
   list.forEach((streamer, index) => {
-    const itemDiv = buildStreamerItem(streamer, index, list, favoriteList);
-    itemDiv.draggable = true;
-    itemDiv.style.cursor = 'grab';
-
-    itemDiv.addEventListener('dragstart', (e) => {
-      wlDragIndex = index;
-      setTimeout(() => { itemDiv.style.opacity = '0.4'; }, 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    itemDiv.addEventListener('dragend', () => {
-      wlDragIndex = null;
-      itemDiv.style.opacity = '';
-      clearInsertLine(itemDiv);
-    });
-    itemDiv.addEventListener('dragover', (e) => {
-      if (wlDragIndex === null || wlDragIndex === index) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setInsertLine(itemDiv, getDropPos(e, itemDiv));
-    });
-    itemDiv.addEventListener('dragleave', () => clearInsertLine(itemDiv));
-    itemDiv.addEventListener('drop', (e) => {
-      e.preventDefault();
-      clearInsertLine(itemDiv);
-      if (wlDragIndex === null || wlDragIndex === index) return;
-      reorderWatchlist(wlDragIndex, streamer.channelId, getDropPos(e, itemDiv));
-      wlDragIndex = null;
-    });
-
-    container.appendChild(itemDiv);
+    container.appendChild(buildStreamerItem(streamer, index, list, favoriteList));
   });
 }
 
@@ -88,34 +57,6 @@ function buildStreamerItem(streamer, index, list, favoriteList) {
   const actionGroup = document.createElement('div');
   actionGroup.style.display = 'flex';
   actionGroup.style.gap = '4px';
-
-  // ▲▼ 세로 그룹
-  const hasUp   = index > 1;
-  const hasDown = index > 0 && index !== list.length - 1;
-  const bothArrows = hasUp && hasDown;
-
-  const arrowGroup = document.createElement('div');
-  arrowGroup.style.cssText = 'display:flex; flex-direction:column; gap:2px;';
-
-  if (hasUp) {
-    const btnUp = document.createElement('button');
-    btnUp.textContent = '▲';
-    setMiniButtonStyle(btnUp, '#868e96');
-    btnUp.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-    if (bothArrows) btnUp.style.fontSize = '10px';
-    btnUp.addEventListener('click', () => moveStreamer(index, -1));
-    arrowGroup.appendChild(btnUp);
-  }
-  if (hasDown) {
-    const btnDown = document.createElement('button');
-    btnDown.textContent = '▼';
-    setMiniButtonStyle(btnDown, '#868e96');
-    btnDown.style.padding = bothArrows ? '0px 5px' : '3px 5px';
-    if (bothArrows) btnDown.style.fontSize = '10px';
-    btnDown.addEventListener('click', () => moveStreamer(index, 1));
-    arrowGroup.appendChild(btnDown);
-  }
-  if (arrowGroup.children.length > 0) actionGroup.appendChild(arrowGroup);
 
   // X 버튼
   const btnDel = document.createElement('button');
