@@ -36,7 +36,6 @@ function showToast(message, type) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabEvent();
-  initWatchSubtabEvents();
   initFavoriteKindEvents();
   initPlatformTabEvents();
   loadAndRenderData();
@@ -57,20 +56,7 @@ function initTabEvent() {
   });
 }
 
-// ── 시청목록 서브탭 전환 ──
-function initWatchSubtabEvents() {
-  document.querySelectorAll('.watch-subtab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.watch-subtab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.watch-subtab-content').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      const target = document.getElementById(btn.getAttribute('data-subtab'));
-      if (target) target.classList.add('active');
-    });
-  });
-}
-
-// ── 즐겨찾기 분류 전환 (목록 / 채널) ──
+// ── 오른쪽 화면 전환 (채널 추가 / 즐겨찾기 / 저장 목록) ──
 function initFavoriteKindEvents() {
   document.querySelectorAll('.fav-kind-btn').forEach(btn => {
     btn.addEventListener('click', () => {

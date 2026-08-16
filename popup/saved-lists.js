@@ -1,11 +1,12 @@
 // ── 저장된 목록 화면 ──
-// 오른쪽 즐겨찾기 영역의 `목록` 분류를 그리고 조작한다.
+// 오른쪽 `저장 목록` 화면을 그리고, 목록 저장(왼쪽 위)과 받은 글 불러오기(채널 추가 화면)를 다룬다.
 // 화면 요소를 스스로 찾아 쓰므로 다른 파일의 변수에 기대지 않는다.
 
 var savedListContainer = document.getElementById('saved-list-container');
 var savedListFormArea  = document.getElementById('saved-list-form');
 var btnSaveCurrentList = document.getElementById('btn-save-current-list');
-var btnImportList      = document.getElementById('btn-import-list');
+var inputImportText    = document.getElementById('input-import-text');
+var btnImportConfirm   = document.getElementById('btn-import-confirm');
 
 // 방금 붙여넣기로 불러온 목록의 이름. 이어서 저장할 때 기본값으로 채워 준다.
 // 받은 사람이 이름을 다시 타이핑하지 않아도 되게 하기 위해서다.
@@ -196,25 +197,6 @@ function openSavedListForm(build) {
   build(savedListFormArea);
 }
 
-function makeFormButtons(confirmLabel, onConfirm) {
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex; gap:3px; margin-top:4px;';
-
-  const btnOk = document.createElement('button');
-  btnOk.textContent = confirmLabel;
-  setMiniButtonStyle(btnOk, '#3B9ED6');
-  btnOk.addEventListener('click', onConfirm);
-
-  const btnCancel = document.createElement('button');
-  btnCancel.textContent = '취소';
-  setMiniButtonStyle(btnCancel, '#868e96');
-  btnCancel.addEventListener('click', closeSavedListForm);
-
-  row.appendChild(btnOk);
-  row.appendChild(btnCancel);
-  return row;
-}
-
 function openSaveCurrentForm() {
   chrome.storage.local.get(['currentViewList'], (result) => {
     const currentList = result.currentViewList || [];
@@ -224,11 +206,16 @@ function openSaveCurrentForm() {
     }
 
     openSavedListForm((area) => {
+      // 이름 입력과 두 버튼을 한 줄에 둔다. 이 폼이 열리면 아래 목록이 밀리는데,
+      // 두 줄이면 팝업이 브라우저가 허용하는 높이를 넘어 전체가 스크롤된다.
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; gap:3px;';
+
       const input = document.createElement('input');
       input.type = 'text';
       input.placeholder = '목록 이름';
       input.value = lastLoadedListName;
-      input.style.cssText = 'width:100%; font-size:11px; padding:3px 5px; border:1px solid var(--clr-border); border-radius:3px; box-sizing:border-box;';
+      input.style.cssText = 'flex:1; min-width:0; font-size:11px; padding:3px 5px; border:1px solid var(--clr-border); border-radius:3px; box-sizing:border-box;';
 
       const submit = () => {
         const name = input.value.trim();
@@ -245,55 +232,61 @@ function openSaveCurrentForm() {
       };
 
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-      area.appendChild(input);
-      area.appendChild(makeFormButtons('저장', submit));
+
+      const btnOk = document.createElement('button');
+      btnOk.textContent = '저장';
+      setMiniButtonStyle(btnOk, '#3B9ED6');
+      btnOk.style.flexShrink = '0';
+      btnOk.addEventListener('click', submit);
+
+      const btnCancel = document.createElement('button');
+      btnCancel.textContent = '취소';
+      setMiniButtonStyle(btnCancel, '#868e96');
+      btnCancel.style.flexShrink = '0';
+      btnCancel.addEventListener('click', closeSavedListForm);
+
+      row.appendChild(input);
+      row.appendChild(btnOk);
+      row.appendChild(btnCancel);
+      area.appendChild(row);
       input.focus();
       input.select();
     });
   });
 }
 
-function openImportForm() {
-  openSavedListForm((area) => {
-    const box = document.createElement('textarea');
-    box.placeholder = '받은 글을 여기에 붙여넣으세요';
-    box.rows = 5;
-    box.style.cssText = 'width:100%; font-size:10px; padding:4px 5px; border:1px solid var(--clr-border); border-radius:3px; box-sizing:border-box; resize:vertical;';
+// ── 받은 글로 갈아타기 ──
+// 입력창이 채널 추가 화면에 늘 보이므로 여는 단계 없이 바로 읽는다.
+function importFromText() {
+  if (!inputImportText) return;
 
-    const submit = () => {
-      const parsed = parseShareText(box.value);
-      if (!parsed) {
-        showToast('이 프로그램의 공유 글이 아닙니다.', 'error');
-        return;
-      }
-      if (parsed.channels.length === 0) {
-        showToast('읽을 수 있는 채널이 없습니다.', 'error');
-        return;
-      }
+  const parsed = parseShareText(inputImportText.value);
+  if (!parsed) {
+    showToast('이 프로그램의 공유 글이 아닙니다.', 'error');
+    return;
+  }
+  if (parsed.channels.length === 0) {
+    showToast('읽을 수 있는 채널이 없습니다.', 'error');
+    return;
+  }
 
-      const title = parsed.name || '받은 목록';
-      let message = `"${title}" 조합으로 갈아탑니다. (채널 ${parsed.channels.length}개)\n`;
-      if (parsed.skipped > 0) message += `읽지 못한 줄 ${parsed.skipped}개는 건너뜁니다.\n`;
-      message += `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
-        + `계속하시겠습니까?`;
-      if (!confirm(message)) return;
+  const title = parsed.name || '받은 목록';
+  let message = `"${title}" 조합으로 갈아탑니다. (채널 ${parsed.channels.length}개)\n`;
+  if (parsed.skipped > 0) message += `읽지 못한 줄 ${parsed.skipped}개는 건너뜁니다.\n`;
+  message += `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
+    + `계속하시겠습니까?`;
+  if (!confirm(message)) return;
 
-      replaceCurrentView(parsed.channels, () => {
-        lastLoadedListName = title;
-        closeSavedListForm();
-        loadAndRenderData();
-        showToast(`${parsed.channels.length}개를 불러왔습니다.`, 'success');
-      });
-    };
-
-    area.appendChild(box);
-    area.appendChild(makeFormButtons('불러오기', submit));
-    box.focus();
+  replaceCurrentView(parsed.channels, () => {
+    lastLoadedListName = title;
+    inputImportText.value = '';
+    loadAndRenderData();
+    showToast(`${parsed.channels.length}개를 불러왔습니다.`, 'success');
   });
 }
 
 // ── 이벤트 연결 ──
 function initSavedListEvents() {
   if (btnSaveCurrentList) btnSaveCurrentList.addEventListener('click', openSaveCurrentForm);
-  if (btnImportList)      btnImportList.addEventListener('click', openImportForm);
+  if (btnImportConfirm)   btnImportConfirm.addEventListener('click', importFromText);
 }
