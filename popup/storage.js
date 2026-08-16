@@ -35,6 +35,7 @@ function loadAndRenderData() {
       const favListForWatchlist = [...allFavIds].map(id => ({ channelId: id }));
       renderWatchlist(currentViewListDiv, currentList, favListForWatchlist);
       renderFavoriteTree(favoriteMasterListDiv, tree, currentList);
+      renderSavedLists();
     });
   });
 }

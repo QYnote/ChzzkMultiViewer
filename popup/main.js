@@ -36,7 +36,7 @@ function showToast(message, type) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabEvent();
-  initWatchSubtabEvents();
+  initFavoriteKindEvents();
   initPlatformTabEvents();
   loadAndRenderData();
   initButtonEvents();
@@ -56,14 +56,14 @@ function initTabEvent() {
   });
 }
 
-// ── 시청목록 서브탭 전환 ──
-function initWatchSubtabEvents() {
-  document.querySelectorAll('.watch-subtab-btn').forEach(btn => {
+// ── 오른쪽 화면 전환 (채널 추가 / 즐겨찾기 / 저장 목록) ──
+function initFavoriteKindEvents() {
+  document.querySelectorAll('.fav-kind-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.watch-subtab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.watch-subtab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.fav-kind-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.fav-kind-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
-      const target = document.getElementById(btn.getAttribute('data-subtab'));
+      const target = document.getElementById(btn.getAttribute('data-kind'));
       if (target) target.classList.add('active');
     });
   });
@@ -91,23 +91,17 @@ function initButtonEvents() {
   initFollowingEvents();
   initSoopFollowingEvents();
   initSettingsEvents();
+  initSavedListEvents();
 
   if (btnOpenDashboard) {
     btnOpenDashboard.addEventListener('click', () => {
-      const dashboardUrl = chrome.runtime.getURL('dashboard.html');
-      chrome.tabs.query({ url: dashboardUrl }, (tabs) => {
-        if (tabs.length > 0) {
-          chrome.tabs.update(tabs[0].id, { active: true });
-          chrome.windows.update(tabs[0].windowId, { focused: true });
-          chrome.storage.local.get(['currentViewList'], (result) => {
-            chrome.tabs.sendMessage(tabs[0].id, {
-              action: 'checkReload',
-              currentViewList: result.currentViewList || []
-            });
-            window.close();
-          });
+      findDashboardTab((tab) => {
+        if (tab) {
+          chrome.tabs.update(tab.id, { active: true });
+          chrome.windows.update(tab.windowId, { focused: true });
+          notifyDashboard(() => window.close());
         } else {
-          chrome.tabs.create({ url: dashboardUrl });
+          chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
           window.close();
         }
       });
