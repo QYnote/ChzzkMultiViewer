@@ -173,6 +173,47 @@
     }
     #current-view-list { height: 340px; }
 
+    /* 즐겨찾기 분류 (목록 / 채널) */
+    .fav-kind-menu {
+      display: flex;
+      gap: 2px;
+      margin: 0 0 4px;
+    }
+    .fav-kind-btn {
+      flex: 1;
+      padding: 4px 0;
+      font-size: 11px;
+      font-weight: bold;
+      background: #eef1f3;
+      color: var(--clr-text-sub);
+      border: 1px solid var(--clr-border);
+      border-radius: 4px;
+      cursor: pointer;
+      width: auto;
+    }
+    .fav-kind-btn.active { background: var(--clr-base); color: #fff; border-color: var(--clr-base); }
+
+    .fav-kind-content { display: none; }
+    .fav-kind-content.active { display: block; }
+
+    /* 목록 분류 상단 조작 */
+    .saved-list-actions { display: flex; gap: 3px; margin-bottom: 4px; }
+    .saved-list-actions button {
+      flex: 1;
+      padding: 4px 0;
+      font-size: 10px;
+      background: #fff;
+      color: var(--clr-dark);
+      border: 1px solid var(--clr-border);
+      border-radius: 4px;
+      cursor: pointer;
+      width: auto;
+    }
+    .saved-list-actions button:hover { background: #f4faff; border-color: var(--clr-base); }
+
+    #saved-list-form { display: none; margin-bottom: 4px; }
+    #saved-list-container { height: 364px; }
+
     /* 입력 폼 */
     .input-group { margin-bottom: 8px; }
     .input-group label {
@@ -362,9 +403,25 @@
           </div>
         </div>
         <div class="watch-column">
-          <p class="column-title">즐겨찾기</p>
-          <div class="list-container" id="favorite-master-list">
-            <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">보관함이 비어 있습니다.</p>
+          <!-- 즐겨찾기는 두 분류다. 목록 = 시청 목록 한 벌, 채널 = 채널 하나하나 -->
+          <div class="fav-kind-menu">
+            <button class="fav-kind-btn" data-kind="fav-kind-list">목록</button>
+            <button class="fav-kind-btn active" data-kind="fav-kind-channel">채널</button>
+          </div>
+
+          <div id="fav-kind-list" class="fav-kind-content">
+            <div class="saved-list-actions">
+              <button id="btn-save-current-list">＋ 현재 목록 저장</button>
+              <button id="btn-import-list">📋 붙여넣기로 불러오기</button>
+            </div>
+            <div id="saved-list-form"></div>
+            <div class="list-container" id="saved-list-container"></div>
+          </div>
+
+          <div id="fav-kind-channel" class="fav-kind-content active">
+            <div class="list-container" id="favorite-master-list">
+              <p style="color:#999; text-align:center; margin-top:70px; font-size:12px;">보관함이 비어 있습니다.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -496,5 +553,9 @@
   <script src="popup/storage.js"></script>
   <script src="popup/following.js"></script>
   <script src="popup/settings.js"></script>
+  <script src="popup/dashboard-sync.js"></script>
+  <script src="popup/list-format.js"></script>
+  <script src="popup/list-store.js"></script>
+  <script src="popup/saved-lists.js"></script>
 </body>
 </html>
