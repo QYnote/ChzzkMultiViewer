@@ -58,11 +58,11 @@ function renameSavedList(oldName, newName, callback) {
 
 // ── 시청 목록을 통째로 갈아끼우기 ──
 // 지금 목록은 사라진다. 사라져도 되는지는 부르는 쪽이 먼저 묻는다.
-// 갈아끼운 뒤 열려 있는 대시보드에 반드시 알린다. 알리지 않으면 사용자가
-// 대시보드를 직접 다시 열기 전까지 옛 조합이 그대로 떠 있다.
+//
+// 열려 있는 대시보드에는 알리지 않는다. 목록을 손보는 동안 보던 방송이 끊기지
+// 않도록, 반영은 `멀티뷰 대시보드 열기`를 누를 때 한꺼번에 한다. 채널을 하나씩
+// 더하고 빼는 다른 조작들도 저장만 하므로 이쪽만 예외로 두지 않는다.
 function replaceCurrentView(channels, callback) {
   const list = (channels || []).map(toStoredChannel);
-  chrome.storage.local.set({ currentViewList: list }, () => {
-    notifyDashboard(() => callback());
-  });
+  chrome.storage.local.set({ currentViewList: list }, () => callback());
 }

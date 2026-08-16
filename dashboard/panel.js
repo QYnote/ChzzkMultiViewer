@@ -6,10 +6,21 @@
 // 원래 가진 음량 조절을 쓴다. 우리가 따로 조절하면 방송 페이지가 기억하는 값과
 // 어긋나 다음에 열 때 엉뚱한 음량으로 시작한다.
 
-// SOOP 방송 페이지가 온전히 그려지는 최소 너비.
+// 방송 페이지가 온전히 그려지는 최소 너비. 플랫폼마다 다르다.
 // 칸이 이보다 좁으면 이 너비로 그린 뒤 줄여서 끼운다.
-// 올리면 좁은 칸에서 글씨가 작아지고, 내리면 페이지가 깨질 수 있다.
-const SOOP_MIN_PAGE_WIDTH = 640;
+// 올리면 좁은 칸에서 글씨가 작아지고, 내리면 페이지가 삐져나가 스크롤 막대가 생긴다.
+//
+// 치지직 값은 실제로 재서 얻었다. 칸을 303px로도 934px로도 줄여 봤지만 페이지 폭이
+// 950px에서 멈췄다. 넓은 화면인 상태에서도 그랬으므로 넓은 화면과는 무관한 제약이다.
+//
+// 잰 값보다 조금 높여 둔 까닭은, 폭 1920인 화면을 좌우로 나누면 칸이 약 955px이 되어
+// 950 바로 위로 빠지기 때문이다. 그 칸만 줄이지 않고 그리는 바람에 옆 칸과 배치가
+// 어긋나 보였다.
+//
+// ⚠️ 이 값보다 넓은 칸은 여전히 줄이지 않고 그린다. 그런 칸은 다른 칸과 배치가 어긋나
+//    보이는데, 화면이 클수록 그런 칸이 자주 나온다. 경계를 아예 없애려면 칸 크기와
+//    무관하게 늘 같은 폭으로 그려야 하지만, 그러면 큰 칸이 확대되어 흐릿해진다.
+const MIN_PAGE_WIDTH = { soop: 640, chzzk: 960 };
 
 function createCellOverlay(streamer, iframe, box) {
   const overlay = document.createElement('div');
@@ -93,10 +104,8 @@ function createCellOverlay(streamer, iframe, box) {
 
   // 방송 페이지를 어느 너비로 그릴지
   function getPageWidth(boxWidth) {
-    if (box.dataset.platform === 'soop' && boxWidth < SOOP_MIN_PAGE_WIDTH) {
-      return SOOP_MIN_PAGE_WIDTH;
-    }
-    return boxWidth;
+    const min = MIN_PAGE_WIDTH[box.dataset.platform] || 0;
+    return boxWidth < min ? min : boxWidth;
   }
 
   function applyFrameLayout() {
