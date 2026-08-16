@@ -163,7 +163,7 @@ function loadSavedList(list) {
     showToast('담긴 채널이 없어 불러올 수 없습니다.', 'error');
     return;
   }
-  const message = `"${list.name}" 조합으로 갈아탑니다.\n`
+  const message = `"${list.name}" 조합으로 덮어씁니다.\n`
     + `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
     + `계속하시겠습니까?`;
   if (!confirm(message)) return;
@@ -177,7 +177,7 @@ function loadSavedList(list) {
 
 // ── 공유 (클립보드로 복사) ──
 function shareSavedList(list) {
-  const text = buildShareText(list.name, list.channels);
+  const text = buildShareText(list.channels);
   navigator.clipboard.writeText(text)
     .then(() => showToast('공유할 글을 복사했습니다.', 'success'))
     .catch(() => showToast('복사하지 못했습니다.', 'error'));
@@ -255,30 +255,28 @@ function openSaveCurrentForm() {
   });
 }
 
-// ── 받은 글로 갈아타기 ──
+// ── 받은 글로 덮어쓰기 ──
 // 입력창이 채널 추가 화면에 늘 보이므로 여는 단계 없이 바로 읽는다.
 function importFromText() {
   if (!inputImportText) return;
 
+  // 한 채널도 못 읽었으면 우리 글이 아니라고 본다. 글에 표식이 없으므로 이것이 유일한 근거다.
   const parsed = parseShareText(inputImportText.value);
-  if (!parsed) {
-    showToast('이 프로그램의 공유 글이 아닙니다.', 'error');
-    return;
-  }
   if (parsed.channels.length === 0) {
     showToast('읽을 수 있는 채널이 없습니다.', 'error');
     return;
   }
 
-  const title = parsed.name || '받은 목록';
-  let message = `"${title}" 조합으로 갈아탑니다. (채널 ${parsed.channels.length}개)\n`;
+  let message = `받은 목록으로 덮어씁니다. (채널 ${parsed.channels.length}개)\n`;
   if (parsed.skipped > 0) message += `읽지 못한 줄 ${parsed.skipped}개는 건너뜁니다.\n`;
   message += `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
     + `계속하시겠습니까?`;
   if (!confirm(message)) return;
 
   replaceCurrentView(parsed.channels, () => {
-    lastLoadedListName = title;
+    // 받은 글에는 이름이 없다. 앞서 불러온 저장 목록의 이름이 남아 엉뚱하게
+    // 미리 채워지지 않도록 비운다.
+    lastLoadedListName = '';
     inputImportText.value = '';
     loadAndRenderData();
     showToast(`${parsed.channels.length}개를 불러왔습니다.`, 'success');

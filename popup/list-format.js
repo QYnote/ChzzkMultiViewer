@@ -1,14 +1,15 @@
 // ── 공유 글 형식 ──
 // 저장된 목록을 남과 주고받기 위한 글 형식만 다룬다. 저장소·화면에는 접근하지 않는다.
 //
-//   [MultiStream] 주말 조합
 //   치지직|채널고유ID|닉네임
 //   SOOP|채널고유ID|닉네임
 //
 // ⚠️ 이 형식은 배포되는 순간 바꾸기 어려운 약속이 된다. 남이 보낸 글을 우리가
 //    읽어야 하므로, 형식을 바꾸면 예전에 오간 글을 읽지 못한다.
+//
+// 표식과 목록 이름을 담던 첫 줄은 없앴다. 우리 글인지는 채널 줄이 한 개라도
+// 읽히는지로 판단하며, 목록 이름은 글에 담기지 않는다.
 
-const SHARE_HEADER    = '[MultiStream]';
 const SHARE_FIELD_SEP = '|';
 
 // 글에 적히는 플랫폼 이름. 사용자가 화면에서 보는 이름과 같게 둔다.
@@ -22,31 +23,26 @@ function platformFromShareLabel(label) {
 }
 
 // ── 목록 한 벌 → 글 ──
-function buildShareText(name, channels) {
-  const lines = [`${SHARE_HEADER} ${name}`];
-  (channels || []).forEach((ch) => {
+function buildShareText(channels) {
+  return (channels || []).map((ch) => {
     const label = SHARE_PLATFORM_LABEL[ch.platform] || SHARE_PLATFORM_LABEL.chzzk;
-    lines.push([label, ch.channelId, ch.name].join(SHARE_FIELD_SEP));
-  });
-  return lines.join('\n');
+    return [label, ch.channelId, ch.name].join(SHARE_FIELD_SEP);
+  }).join('\n');
 }
 
 // ── 글 → 목록 한 벌 ──
-// 우리 형식이 아니면 null. 맞으면 { name, channels, skipped }를 준다.
-// 일부 줄만 깨진 글은 읽을 수 있는 것만 담고, 건너뛴 줄 수를 알려 준다.
+// { channels, skipped }를 준다. 읽을 수 있는 것만 담고, 건너뛴 줄 수를 알려 준다.
+// 한 채널도 못 읽었으면 우리 글이 아니라고 보며, 그 판단은 부르는 쪽이 한다.
 function parseShareText(text) {
   const lines = String(text || '')
     .split(/\r?\n/)
     .map(line => line.trim())
     .filter(line => line !== '');
 
-  if (lines.length === 0 || !lines[0].startsWith(SHARE_HEADER)) return null;
-
-  const name = lines[0].slice(SHARE_HEADER.length).trim();
   const channels = [];
   let skipped = 0;
 
-  lines.slice(1).forEach((line) => {
+  lines.forEach((line) => {
     const parts = line.split(SHARE_FIELD_SEP);
     if (parts.length < 3) { skipped++; return; }
 
@@ -62,5 +58,5 @@ function parseShareText(text) {
     channels.push({ channelId, name: channelName, platform });
   });
 
-  return { name, channels, skipped };
+  return { channels, skipped };
 }
