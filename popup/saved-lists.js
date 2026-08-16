@@ -164,7 +164,7 @@ function loadSavedList(list) {
     return;
   }
   const message = `"${list.name}" 조합으로 덮어씁니다.\n`
-    + `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
+    + `지금 시청 목록은 사라집니다. 대시보드는 "멀티뷰 대시보드 열기"를 눌러야 바뀝니다.\n`
     + `계속하시겠습니까?`;
   if (!confirm(message)) return;
 
@@ -269,7 +269,7 @@ function importFromText() {
 
   let message = `받은 목록으로 덮어씁니다. (채널 ${parsed.channels.length}개)\n`;
   if (parsed.skipped > 0) message += `읽지 못한 줄 ${parsed.skipped}개는 건너뜁니다.\n`;
-  message += `지금 시청 목록은 사라지고, 대시보드가 열려 있으면 보던 방송이 다시 시작됩니다.\n`
+  message += `지금 시청 목록은 사라집니다. 대시보드는 "멀티뷰 대시보드 열기"를 눌러야 바뀝니다.\n`
     + `계속하시겠습니까?`;
   if (!confirm(message)) return;
 
