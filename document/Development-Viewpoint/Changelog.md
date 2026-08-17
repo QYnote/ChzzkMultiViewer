@@ -1,4 +1,4 @@
-[설계서](../README.md) › Changelog
+[설계서](../../README.md) › [Development-Viewpoint](README.md) › Changelog
 
 # Changelog
 

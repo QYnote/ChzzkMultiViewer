@@ -1,4 +1,4 @@
-[설계서](../README.md) › [Architecture](Architecture.md) › [Platforms](Platforms.md) › 치지직
+[설계서](../../../README.md) › [Development-Viewpoint](../../README.md) › Platforms › 치지직
 
 # 치지직 (Chzzk)
 
