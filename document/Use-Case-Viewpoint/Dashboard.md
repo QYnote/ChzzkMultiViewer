@@ -1,4 +1,4 @@
-[설계서](../README.md) › [Overview](Overview.md) › 대시보드 화면
+[설계서](../../README.md) › [Use-Case-Viewpoint](README.md) › Dashboard
 
 # 대시보드 화면
 

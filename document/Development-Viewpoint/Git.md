@@ -1,4 +1,4 @@
-[설계서](../README.md) › Git
+[설계서](../../README.md) › [Development-Viewpoint](README.md) › Git
 
 # Git
 

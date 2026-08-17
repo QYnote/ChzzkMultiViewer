@@ -1,4 +1,4 @@
-[설계서](../README.md) › Build
+[설계서](../../README.md) › [Development-Viewpoint](README.md) › Build
 
 # Build
 

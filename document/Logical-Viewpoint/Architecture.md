@@ -1,4 +1,4 @@
-[설계서](../README.md) › Architecture
+[설계서](../../README.md) › [Logical-Viewpoint](README.md) › Architecture
 
 # Architecture
 
@@ -13,12 +13,12 @@
 
 | 계층 | 실행 컨텍스트 | 역할 |
 |---|---|---|
-| [Background](Background.md) | Service Worker | 로그인 세션 쿠키 주입, 팔로잉/생방송 상태 API 대리 호출 |
-| [Popup](Popup.md) | 팝업 페이지 | 시청 목록·즐겨찾기·설정 관리, 대시보드 열기 |
-| [Dashboard](Dashboard.md) | 대시보드 탭 | 멀티뷰 화면 조립, 칸 배치, 자동 동기화 |
+| [Background](Components/Background.md) | Service Worker | 로그인 세션 쿠키 주입, 팔로잉/생방송 상태 API 대리 호출 |
+| [Popup](Components/Popup.md) | 팝업 페이지 | 시청 목록·즐겨찾기·설정 관리, 대시보드 열기 |
+| [Dashboard](Components/Dashboard.md) | 대시보드 탭 | 멀티뷰 화면 조립, 칸 배치, 자동 동기화 |
 | [Platforms](Platforms.md) | Background · Dashboard에 각각 로드되는 공유 라이브러리 | 치지직/SOOP 차이를 동일 인터페이스로 흡수 |
 
-- 방송 페이지 iframe 안에서 도는 [ContentScript](ContentScript.md)도 별도 실행 컨텍스트이지만, Dashboard가 만든 iframe 안에서만 동작하고 Dashboard와만 대화하므로 [Dashboard](Dashboard.md)의 하위 문서로 둔다. 다만 SOOP MAIN 월드 스크립트를 등록하는 쪽은 Background다.
+- 방송 페이지 iframe 안에서 도는 [ContentScript](Components/ContentScript.md)도 별도 실행 컨텍스트이지만, Dashboard가 만든 iframe 안에서만 동작하고 Dashboard와만 대화하므로 [Dashboard](Components/Dashboard.md)의 하위 문서로 둔다. 다만 SOOP MAIN 월드 스크립트를 등록하는 쪽은 Background다.
 - Background와 Platforms는 Popup·Dashboard 양쪽이 쓰는 공유 계층이라 특정 계층의 하위에 두지 않는다.
 
 ### 1. Chrome MV3 실행 환경

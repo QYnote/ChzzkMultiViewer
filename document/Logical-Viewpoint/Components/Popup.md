@@ -1,4 +1,4 @@
-[설계서](../README.md) › [Architecture](Architecture.md) › Popup
+[설계서](../../../README.md) › [Logical-Viewpoint](../../README.md) › [Components](../Components.md) › Popup
 
 # Popup
 

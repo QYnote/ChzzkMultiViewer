@@ -1,4 +1,4 @@
-[설계서](../README.md) › [Overview](Overview.md) › 팝업 화면
+[설계서](../../README.md) › [Use-Case-Viewpoint](README.md) › Popup
 
 # 팝업 화면
 
