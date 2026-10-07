@@ -1,193 +1,98 @@
 [설계서](../../README.md) › [Process-Viewpoint](README.md) › Flows-Lifecycle
 
-# 확장 생명주기 흐름
+# 확장 프로그램 생명주기
 
-> **다루는 내용:** 설치부터 종료까지 확장의 상태 전이
-> **갱신 트리거:** 생명주기 단계가 추가되거나 상태 전이가 변경될 때
+> **다루는 내용:** 설치부터 종료까지 각 실행 환경이 언제 생기고 사라지며 그때 무엇을 하는지
+> **갱신 트리거:** 실행 환경이 생기거나 사라질 때 하는 일이 바뀔 때
 
----
+## 본문
 
-## 1. 초기화 단계
-
-확장이 설치되고 처음 활성화될 때:
+### 1. 설치·업데이트·브라우저 시작
 
 ```mermaid
-graph TD
-    A["사용자가 Chrome에 설치"] -->|manifest.json 로드| B["Manifest 검증"]
-    B --> C["Service Worker 등록"]
-    C --> D["권한 요청"]
-    D --> E["네트워크 규칙 로드"]
-    E --> F["준비 완료"]
-    F --> G["사용자 아이콘 클릭 대기"]
-    
-    style F fill:#4caf50,color:#ffffff
-    style G fill:#ffeb3b,color:#333
+flowchart LR
+  A["확장 설치 · 업데이트"] --> R1["예전 네트워크 규칙 정리"]
+  R1 --> R2["끼워 넣기 제한 해제 규칙 걸기"]
+  R2 --> R3["로그인 쿠키 싣기 규칙 걸기"]
+  R3 --> R4["SOOP 전용 스크립트 등록"]
+
+  B["브라우저 시작"] --> S1["예전 네트워크 규칙 정리"]
+  S1 --> S2["끼워 넣기 제한 해제 규칙 걸기"]
+  S2 --> S3["로그인 쿠키 싣기 규칙 걸기"]
+
+  C["치지직 · SOOP 쿠키 바뀜<br/>(로그인 · 로그아웃)"] --> K["로그인 쿠키 싣기 규칙 다시 걸기"]
+
+  style A fill:#e8f0fe,stroke:#4a6fa5,color:#000
+  style B fill:#e8f0fe,stroke:#4a6fa5,color:#000
+  style C fill:#e8f0fe,stroke:#4a6fa5,color:#000
 ```
 
-**포인트:**
-- ✅ Service Worker는 manifest.json 로드 후 바로 등록
-- ✅ 네트워크 규칙(declarativeNetRequest)은 startup 시 한 번만 로드
-- ⏳ 이후 아이콘 클릭 대기
+- 모두 Background가 한다. 걸어 둔 규칙과 등록한 스크립트는 **브라우저를 껐다 켜도 남는다.** 브라우저 시작 때 쿠키 싣기 규칙을 다시 거는 것은 그사이 바뀌었을 쿠키 값을 반영하기 위해서다. 끼워 넣기 제한 해제 규칙은 같은 내용을 다시 걸 뿐이라 영향이 없다.
+- SOOP 전용 스크립트 등록은 설치·업데이트 때만 한다. 남아 있으므로 브라우저 시작 때는 다시 하지 않는다.
+- 설치 때 따로 묻는 권한은 없다. 필요한 권한은 설치 시점에 한 번에 받는다.
+- 각 규칙이 하는 일은 [Background](../Logical-Viewpoint/Components/Background.md) 참고.
 
----
-
-## 2. 런타임 상태 전이
-
-사용자 조작에 따른 상태 전이:
+### 2. 실행 환경이 사는 동안
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: 설치 완료
-    
-    Idle --> PopupActive: 사용자 아이콘 클릭
-    PopupActive --> Idle: 팝업 닫음
-    
-    PopupActive --> DashboardActive: "대시보드 열기" 클릭
-    
-    DashboardActive --> DashboardActive: 칸 조작, 설정 변경
-    DashboardActive --> PopupActive: 팝업으로 복귀
-    DashboardActive --> Idle: 대시보드 탭 닫음
-    
-    PopupActive --> DashboardActive: "대시보드 열기" 재클릭
-    
-    note right of PopupActive
-        메모리: 팝업 닫으면 즉시 해제
-        저장소: 유지됨
-    end note
-    
-    note right of DashboardActive
-        메모리: 탭 닫을 때까지 유지
-        ContentScript: 각 iframe에서 활동
-    end note
+  [*] --> 대기: 설치 완료
+  대기 --> 팝업열림: 툴바 아이콘 클릭
+  팝업열림 --> 대기: 팝업 닫힘
+  팝업열림 --> 대시보드열림: 멀티뷰 대시보드 열기
+  대시보드열림 --> 대시보드열림: 팝업을 다시 열어 조작
+  대시보드열림 --> 대기: 대시보드 탭 닫음
 ```
 
-**포인트:**
-- 🔄 **상태:** Idle ↔ PopupActive ↔ DashboardActive
-- 💾 **메모리:** 탭은 닫혀도 저장소 데이터는 영구 보존
-- 🔌 **ContentScript:** Dashboard 활성 시에만 동작
+| 실행 환경 | 생기는 때 | 사라지는 때 | 들고 있는 값 |
+|---|---|---|---|
+| Background | 확장 설치·업데이트, 브라우저 시작, 요청이 올 때 | 할 일이 없으면 브라우저가 끈다 | 없음. 필요한 값은 그때그때 읽는다 |
+| 팝업 | 툴바 아이콘 클릭 | 팝업 바깥을 누르거나 대시보드를 열 때 | 없음. 조작할 때마다 바로 저장소에 쓴다 |
+| 대시보드 | `멀티뷰 대시보드 열기` (열려 있으면 그 탭으로 이동) | 사용자가 탭을 닫을 때 | 방송 화면 상자들, 배치, 자동 동기화 상태 |
+| 방송 화면 안 스크립트 | 대시보드가 방송 화면을 만들 때 브라우저가 붙인다 | 그 방송 화면이 다시 읽히거나 사라질 때 | 딜레이 측정, 넓은 화면 전환 상태 |
 
----
+- 팝업과 대시보드는 **동시에 열려 있을 수 있다.** 서로 직접 연결되지 않고, 대시보드 열기를 누를 때만 팝업이 대시보드에 알린다.
+- 방송 화면 안 스크립트는 **확장 프로그램이 만든 방송 화면에서만** 동작한다. 사용자가 일반 탭으로 연 방송에는 붙어도 바로 손을 뗀다 — [ContentScript](../Logical-Viewpoint/Components/ContentScript.md) 참고.
 
-## 3. 팝업 생명주기
-
-사용자가 아이콘을 클릭했을 때:
+### 3. 팝업이 열릴 때
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Chrome
-    participant Popup as Popup<br/>페이지
-    participant Storage as 브라우저<br/>저장소
-    participant Background
+  actor U as 사용자
+  participant P as Popup
+  participant S as 브라우저 저장소
 
-    User->>Chrome: 확장 아이콘 클릭
-    Chrome->>Popup: popup.html 로드
-    Popup->>Storage: 현재 상태 읽기<br/>(시청 목록, 설정)
-    Popup->>Popup: JavaScript 실행<br/>UI 렌더링
-    Popup-->>User: 팝업 화면 표시
-    
-    User->>Popup: 팝업에서 작업 수행
-    Popup->>Storage: 변경사항 저장
-    Note over Popup,Storage: 각 조작마다 즉시 저장
-    
-    User->>Chrome: 팝업 영역 밖 클릭 또는 Esc
-    Chrome->>Popup: 팝업 제거
-    Popup-->>Popup: 메모리 즉시 해제
-    Note over Popup: 모든 변수, 타이머 정리
+  U->>P: 툴바 아이콘 클릭
+  P->>S: 시청 목록 · 설정 · 즐겨찾기 트리 · 저장된 목록 읽기
+  P-->>U: 화면 그리기
+  loop 조작할 때마다
+    U->>P: 조작
+    P->>S: 바로 저장
+  end
+  U->>P: 팝업 닫기
+  Note over P: 통째로 사라진다. 저장소의 값은 남는다
 ```
 
-**포인트:**
-- ⚡ **빠른 생성:** Chrome이 popup.html 로드 후 즉시 렌더링
-- 💾 **자동 저장:** 팝업은 저장소에만 기록, 메모리에 상태 없음
-- 🗑️ **즉시 해제:** 닫히는 순간 메모리에서 완전 제거
-
----
-
-## 4. 대시보드 생명주기
-
-사용자가 팝업에서 "대시보드 열기"를 눌렀을 때:
+### 4. 대시보드가 열릴 때
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Popup
-    participant Chrome
-    participant Dashboard as Dashboard<br/>탭
-    participant Storage as 브라우저<br/>저장소
-    participant ContentScript as ContentScript<br/>(각 iframe)
+  participant D as Dashboard
+  participant S as 브라우저 저장소
+  participant BG as Background
+  participant C as 방송 화면
 
-    User->>Popup: "멀티뷰 대시보드 열기"
-    Popup->>Chrome: 대시보드 탭 열기 요청<br/>(또는 기존 탭으로 전환)
-    
-    alt 새 탭 생성
-        Chrome->>Dashboard: dashboard.html 로드
-        Dashboard->>Storage: 시청 목록 읽기
-        Dashboard->>Dashboard: 채널별 iframe 생성
-        Dashboard->>Chrome: 각 iframe에 ContentScript 주입
-        
-        par 병렬 처리 - 각 채널별
-            Dashboard->>ContentScript: 초기화 메시지
-            ContentScript->>ContentScript: 해당 방송 페이지 연결
-            ContentScript-->>Dashboard: 준비 완료
-        end
-    else 기존 탭 존재
-        Chrome->>Dashboard: 해당 탭으로 포커스 변경
-        Dashboard-->>Dashboard: 열려있는 상태 유지
-    end
-    
-    Dashboard-->>User: 멀티뷰 화면 표시
-    
-    loop 사용자가 대시보드에서 작업하는 동안
-        User->>Dashboard: 칸 조작, 설정 변경
-        Dashboard->>Storage: 배치, 설정 저장
-        Dashboard->>ContentScript: 필요시 명령 전송
-    end
-    
-    User->>Chrome: 대시보드 탭 닫음
-    Dashboard-->>Dashboard: 메모리 해제 (저장소 유지)
-    ContentScript-->>ContentScript: 활동 종료
+  D->>S: 시청 목록 · 설정 · 배치 읽기
+  D->>D: 배치를 시청 목록에 맞추기
+  par 채널마다
+    D->>C: 방송 화면 만들기
+    D->>BG: 생방송 여부 · 프로필 사진 조회
+  end
+  C->>D: 재생이 시작되면 딜레이 · 넓은 화면 전환 결과 · 광고 상태
+  loop 1분마다
+    D->>BG: 모든 칸의 생방송 여부 다시 조회
+  end
 ```
 
-**포인트:**
-- 🚀 **일괄 로드:** 대시보드는 **모든 채널을 한 번에** 로드 (Popup과 다름)
-- ♻️ **탭 재사용:** 이미 열려 있으면 새 탭 생성 안 함
-- ⏱️ **장시간 유지:** 사용자가 닫을 때까지 메모리에 유지
-- 🔌 **ContentScript 함께:** 각 iframe의 ContentScript도 함께 동작
-
----
-
-## 5. 상태별 리소스 관리
-
-```
-┌─────────────────────────────────────────┐
-│           Idle 상태                      │
-│  • Service Worker만 백그라운드에서 대기  │
-│  • 다른 리소스 없음                      │
-│  • 저장소만 유지                         │
-└─────────────────────────────────────────┘
-           ↓ (아이콘 클릭)
-┌─────────────────────────────────────────┐
-│        PopupActive 상태                  │
-│  • Popup 페이지 메모리                   │
-│  • Popup HTML/CSS/JS                    │
-│  • 저장소 Read/Write 중                  │
-│  • Background와 Message 통신             │
-└─────────────────────────────────────────┘
-           ↓ (대시보드 열기)
-┌─────────────────────────────────────────┐
-│       DashboardActive 상태               │
-│  • Dashboard 탭 메모리                   │
-│  • N개 iframe (채널 수만큼)              │
-│  • N개 ContentScript (각 iframe)        │
-│  • 저장소 Read/Write + 감지              │
-│  • Background와 Message 통신             │
-│  ├─ Popup도 동시에 열려있을 수 있음     │
-│  └─ Popup과 Dashboard는 독립적          │
-└─────────────────────────────────────────┘
-```
-
-**포인트:**
-- 🎯 **상태별 리소스:** 각 상태에서 필요한 리소스만 로드
-- 🔄 **상태 전이:** 탭 닫음 = 메모리 해제 (저장소는 유지)
-- 📊 **복수 인스턴스 가능:** Popup과 Dashboard 동시 실행 가능 (독립적)
-
+- 방송이 꺼져 있는 채널은 방송 화면을 비우고 "방송중이 아닙니다"를 띄운다. 다시 켜지면 그때 방송 화면을 채운다.
+- 배치를 맞추는 규칙은 [저장 데이터](../Physical-Viewpoint/DataSchema.md#데이터끼리의-관계) 참고.

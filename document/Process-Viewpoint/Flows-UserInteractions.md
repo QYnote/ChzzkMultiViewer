@@ -1,165 +1,139 @@
 [설계서](../../README.md) › [Process-Viewpoint](README.md) › Flows-UserInteractions
 
-# 사용자 상호작용 흐름
+# 사용자 조작 흐름
 
-> **다루는 내용:** 사용자가 UI와 상호작용할 때의 메시지 시퀀스
-> **갱신 트리거:** 사용자 조작에 따른 메시지 흐름이 변경될 때
+> **다루는 내용:** 사용자가 조작했을 때 모듈들이 주고받는 순서
+> **갱신 트리거:** 조작에 따라 모듈 사이에 오가는 순서가 바뀔 때
 
----
+## 본문
 
-## 1. 채널 추가 흐름
-
-사용자가 팝업에서 채널을 추가할 때:
+### 1. 채널 추가
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Popup
-    participant Storage as 브라우저 저장소
-    participant Dashboard
+  actor U as 사용자
+  participant P as Popup
+  participant S as 브라우저 저장소
 
-    User->>Popup: "채널 추가" 버튼 클릭
-    Popup->>Popup: 입력값 검증
-    Popup->>Storage: 현재 시청 목록 읽기
-    Popup->>Storage: 새 채널 추가 후 저장
-    Popup->>Dashboard: 채널 변경 알림 (존재하면)
-    Note over Popup,Dashboard: ⚠️ Dashboard는 즉시 반영 안 함<br/>다음 "대시보드 열기"에서 반영
+  U->>P: 채널 ID·이름 입력 후 추가
+  P->>P: 입력 형식 검사
+  P->>S: 시청 목록 읽기
+  alt 이미 있는 채널
+    P-->>U: 추가하지 않고 알림
+  else 새 채널
+    P->>S: 목록에 더해 저장
+    P-->>U: 목록 다시 그리기
+  end
 ```
 
-**포인트:**
-- ✅ Popup에서 즉시 저장소에 기록
-- ✅ Dashboard에 알림만 전송 (UI 변경은 안 함)
-- ✅ `멀티뷰 대시보드 열기` 시점에 최종 반영
+- 열려 있는 대시보드에는 **알리지 않는다.** 반영은 `멀티뷰 대시보드 열기`를 누를 때 한꺼번에 한다 — [3. 대시보드 열기](#3-대시보드-열기)
+- 즐겨찾기에서 옮기기, 팔로잉 목록에서 더하기, 저장한 목록 불러오기, 받은 글로 덮어쓰기도 같다. 저장소에만 쓴다.
 
----
-
-## 2. 팔로잉 목록 조회 흐름
-
-사용자가 팝업에서 "팔로잉 불러오기" 버튼을 눌렀을 때:
+### 2. 팔로잉 목록 불러오기
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Popup
-    participant Background
-    participant Platforms
-    participant API as Chzzk/SOOP API
+  actor U as 사용자
+  participant P as Popup
+  participant BG as Background
+  participant PF as Platforms
+  participant API as 플랫폼 서버
 
-    User->>Popup: "팔로잉 불러오기" 클릭
-    Popup->>Background: 팔로잉 목록 조회 요청
-    Background->>Background: 쿠키 읽기
-    Background->>Platforms: 플랫폼 선택 및 호출
-    Platforms->>API: API 요청 (쿠키 포함)
-    API-->>Platforms: 팔로잉 목록 응답
-    Platforms-->>Background: 파싱된 목록 반환
-    Background-->>Popup: 메시지 응답
-    Popup->>Popup: 목록 UI 렌더링
-    Popup-->>User: 팔로잉 목록 표시
+  U->>P: 팔로잉 목록 불러오기
+  P->>BG: 팔로잉 목록 조회 요청 (플랫폼 지정)
+  BG->>PF: 해당 플랫폼 어댑터 호출
+  PF->>API: 조회 (로그인 쿠키가 실려 감)
+  API-->>PF: 팔로잉 목록
+  PF-->>BG: 결과
+  BG-->>P: 응답
+  P-->>U: 생방송 먼저 정렬해 표시
 ```
 
-**포인트:**
-- 🔒 **권한 분리:** Popup은 쿠키/네트워크 접근 불가 → Background 요청 필수
-- 🔄 **플랫폼 추상화:** Platforms가 Chzzk/SOOP 차이 흡수
-- 📨 **비동기 통신:** 메시지 기반 request-response 패턴
+- 버튼을 보여 줄지 정하는 **로그인 판단**은 플랫폼마다 다르다. 치지직은 팝업이 브라우저 쿠키를 직접 보고, SOOP은 Background에 확인을 맡긴다 — [치지직](../Development-Viewpoint/Platforms/Chzzk.md) · [SOOP](../Development-Viewpoint/Platforms/Soop.md)
+- 조회가 실패하면 실패 안내와 함께 그 플랫폼 홈으로 가는 링크를 보여 준다.
 
----
-
-## 3. 화면 조작 흐름 (음량 제어)
-
-사용자가 대시보드에서 음량을 조절했을 때:
+### 3. 대시보드 열기
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Dashboard
-    participant ContentScript as ContentScript<br/>(iframe 안)
-    participant BroadcastPage as 방송 페이지<br/>(chzzk.naver.com)
+  actor U as 사용자
+  participant P as Popup
+  participant D as Dashboard
+  participant S as 브라우저 저장소
+  participant C as 방송 화면
 
-    User->>Dashboard: 음량 슬라이더 조작
-    Dashboard->>Dashboard: 슬라이더 값 계산
-    Dashboard->>ContentScript: 음량 변경 명령 (값: 0~100)
-    
-    ContentScript->>BroadcastPage: 페이지의 음량 슬라이더 조작
-    Note over ContentScript,BroadcastPage: DOM 직접 조작<br/>audio 요소 volumechange 트리거
-    
-    BroadcastPage-->>ContentScript: 변경 완료
-    ContentScript-->>Dashboard: 상태 보고 (실제 음량값)
-    Dashboard->>Dashboard: UI 동기화
-```
-
-**포인트:**
-- 🚫 **제약:** Dashboard는 **iframe 내부에 직접 접근 불가** (CORS)
-- 🔗 **중계:** ContentScript가 유일한 접근 통로
-- ↔️ **양방향:** Dashboard → ContentScript → 화면 조작 → 상태 보고
-
----
-
-## 4. 배치 저장 흐름
-
-사용자가 대시보드에서 칸을 이동/리사이징했을 때:
-
-```mermaid
-sequenceDiagram
-    actor User as 사용자
-    participant Dashboard
-    participant Storage as 브라우저 저장소
-
-    User->>Dashboard: 칸 드래그 / 리사이징
-    Dashboard->>Dashboard: 새 배치 계산<br/>(위치, 크기)
-    Dashboard->>Storage: 채널별 배치 저장<br/>{ channelId: {x, y, w, h} }
-    Note over Dashboard,Storage: ⚠️ 채널 목록 순서는<br/>저장하지 않음
-
-    alt 다른 탭에서 열려 있음
-        Storage-->>Dashboard: 저장소 변경 감지
-        Dashboard->>Dashboard: 다른 탭에 알림
-    else 단일 탭만 열려 있음
-        Note over Dashboard: 알림 불필요
+  U->>P: 멀티뷰 대시보드 열기
+  alt 대시보드가 열려 있지 않음
+    P->>D: 새 탭 열기
+    D->>S: 시청 목록 · 설정 · 배치 읽기
+    D->>C: 채널마다 방송 화면 만들기
+  else 이미 열려 있음
+    P->>D: 그 탭으로 이동, 지금 시청 목록 전달
+    alt 담긴 채널이 같음
+      D->>D: 아무것도 다시 읽지 않음
+    else 하나라도 다름
+      D->>S: 다시 읽기
+      D->>C: 방송 화면을 모두 새로 만듦
     end
+  end
 ```
 
-**포인트:**
-- 📍 **채널별 독립 저장:** 각 채널이 **자신의 위치를 기억**
-- 🔄 **순서 무관:** 팝업에서 목록 순서를 바꿔도 배치는 유지
-- 🔔 **실시간 동기화:** 저장소 감지로 다른 탭에 반영
+- 담긴 채널이 하나라도 다르면 겹치는 채널까지 **모두 다시 읽는다.** 그 순간 보던 방송이 끊긴다.
+- 방송 화면 안 스크립트는 브라우저가 붙여 준다. 대시보드가 따로 넣거나 초기화 지시를 보내지 않는다.
 
----
-
-## 5. 설정 변경 흐름
-
-사용자가 팝업에서 "자동 새로고침" 설정을 켰을 때:
+### 4. 배치 바꾸기
 
 ```mermaid
 sequenceDiagram
-    actor User as 사용자
-    participant Popup
-    participant Storage as 브라우저 저장소
-    participant Dashboard
-    participant ContentScript as ContentScript<br/>(각 iframe)
+  actor U as 사용자
+  participant D as Dashboard
+  participant S as 브라우저 저장소
 
-    User->>Popup: "자동 새로고침" 체크박스 토글
-    Popup->>Storage: 설정값 저장<br/>{ autoRefresh: true }
-    Note over Popup,Storage: 영구 저장
-
-    Popup->>Dashboard: 설정 변경 알림 (존재하면)
-    
-    Dashboard->>Storage: 설정값 감지
-    Dashboard->>ContentScript: 각 iframe에<br/>새로고침 로직 지시
-
-    loop 각 iframe에서 실행
-        ContentScript->>ContentScript: 새로고침 타이머 시작
-        Note over ContentScript: 예: 30초 마다 새로고침
-    end
-
-    alt 사용자가 다시 토글 (끔)
-        User->>Popup: "자동 새로고침" 체크 해제
-        Popup->>Storage: { autoRefresh: false }
-        Popup->>Dashboard: 설정 변경 알림
-        Dashboard->>ContentScript: 타이머 중지
-        ContentScript->>ContentScript: 새로고침 로직 정지
-    end
+  U->>D: 경계 끌기 / 손잡이로 자리 옮기기·쪼개기
+  D->>D: 배치 트리 다시 계산
+  D->>D: 칸 크기·자리 반영
+  D->>S: 배치 트리 저장
 ```
 
-**포인트:**
-- ⚙️ **영구 저장:** 설정은 저장소에 기록되어 다음 실행에서 복원
-- 🔄 **실시간 반영:** Popup 변경 → Dashboard 감지 → ContentScript 실행
-- 🎯 **각 iframe 독립:** 각 채널이 설정을 독립적으로 실행
+- 방송 화면을 다시 만들지 않는다. 칸의 크기와 위치만 바뀌므로 보던 방송이 끊기지 않는다.
+- 저장하는 모양은 [저장 데이터](../Physical-Viewpoint/DataSchema.md#5-대시보드-배치) 참고.
+
+### 5. 설정 바꾸기
+
+```mermaid
+sequenceDiagram
+  actor U as 사용자
+  participant P as Popup
+  participant S as 브라우저 저장소
+  participant D as Dashboard
+
+  U->>P: 자동 동기화 · 허용 지연 시간 · 칸 채널 표시 바꾸기
+  P->>S: 설정 저장 (바꾸는 즉시)
+  S-->>D: 설정이 바뀌었음 (대시보드가 감시)
+  D->>D: 자동 동기화 · 표시 방식 바로 적용
+```
+
+- 팝업이 대시보드에 알리는 것이 아니다. 대시보드가 저장소의 설정 변경을 스스로 감시한다. 저장 항목 중 대시보드가 감시하는 것은 설정뿐이다.
+
+### 6. 방송 화면 소식과 자동 동기화
+
+사용자가 직접 하는 조작은 아니지만, 대시보드를 보는 동안 계속 돌아가는 흐름이다.
+
+```mermaid
+sequenceDiagram
+  participant C as 방송 화면
+  participant D as Dashboard
+
+  C->>C: 재생 시작
+  loop 1초마다
+    C->>D: 딜레이
+    alt 기준 초과 · 광고 아님 · 방송 중 · 15초 안에 다시 읽은 적 없음
+      D->>C: 그 칸만 다시 읽기 (주소 다시 넣기)
+    end
+  end
+  C->>D: 넓은 화면 전환 결과
+  C->>D: 광고 시작·끝
+```
+
+- 딜레이 소식이 **10초 동안 없으면** 신호가 끊긴 것으로 보고 그 칸을 다시 읽는다. 딜레이는 재생이 시작된 뒤부터 오므로, 열린 뒤 10초 안에 재생이 시작되지 않는 칸도 여기에 걸린다.
+- 판정 기준과 예외는 [Dashboard](../Logical-Viewpoint/Components/Dashboard.md#22-자동-동기화--비방송-확인) · [ContentScript](../Logical-Viewpoint/Components/ContentScript.md) 참고.

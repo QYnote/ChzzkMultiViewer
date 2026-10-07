@@ -31,9 +31,9 @@
 
 | 실행 환경 | 브라우저가 강제하는 성질 |
 |---|---|
-| Service Worker | 화면이 없다. 로그인 쿠키를 읽고 네트워크 규칙을 거는 권한이 **여기에만** 있다. 할 일이 없으면 브라우저가 꺼버리므로 값을 오래 들고 있지 못한다 |
+| Service Worker | 화면이 없다. 확장 설치·업데이트와 브라우저 시작 때 깨어나므로, 네트워크 규칙처럼 **늘 걸려 있어야 하는 것**을 여기서 건다. 할 일이 없으면 브라우저가 꺼버리므로 값을 오래 들고 있지 못한다 |
 | 팝업 페이지 | 툴바 아이콘을 누를 때 만들어지고 **닫는 순간 통째로 사라진다.** 기억해야 할 값은 반드시 브라우저 저장소에 넣어야 한다 |
-| 대시보드 탭 | 일반 탭이라 오래 산다. 대신 확장 권한이 없어, 쿠키나 네트워크가 필요하면 Background에 부탁한다 |
+| 대시보드 탭 | 확장 프로그램이 연 탭이라 닫기 전까지 오래 산다. 확장 기능을 쓸 수 있지만, 외부 조회는 직접 하지 않고 Background에 맡긴다 |
 | 방송 페이지 안 | 남의 페이지에 얹혀 도는 격리된 환경. 그 페이지의 화면만 만질 수 있다 |
 
 - 팝업이 값을 들고 있지 못하고 Background도 언제든 꺼질 수 있으므로, Popup과 Dashboard의 공유 상태는 2.2 공유 상태처럼 브라우저 저장소를 매개로 삼는다.
@@ -47,12 +47,13 @@
 graph LR
   Popup -->|요청| Background
   Popup -->|읽기·쓰기| Storage[(브라우저 저장소)]
+  Popup -->|치지직 로그인 쿠키 확인| BrowserNet
   Popup -.->|탭 열기 · 변경 반영 요청| Dashboard
 
   Dashboard --> Platforms
   Dashboard -->|요청| Background
-  Dashboard -->|읽기·쓰기 + 변경 감지| Storage
-  Dashboard <-->|지시 · 소식| ContentScript
+  Dashboard -->|읽기·쓰기 + 설정 변경 감지| Storage
+  ContentScript -->|소식| Dashboard
 
   Background --> Platforms
   Background -->|쿠키 조회 · 네트워크 규칙| BrowserNet[(브라우저 쿠키 · 네트워크)]
@@ -61,7 +62,8 @@ graph LR
 
 - Platforms는 Background와 Dashboard 양쪽에 각각 로드되는 공유 계층으로, 역방향 의존이 없다.
 - Popup은 Platforms를 로드하지 않는다. 팔로잉·생방송 상태가 필요하면 반드시 Background를 거친다.
-- ContentScript는 Background·Popup과 직접 연결되지 않고, 오직 자신을 담고 있는 Dashboard와만 대화한다.
+- ContentScript는 Background·Popup과 직접 연결되지 않고, 오직 자신을 담고 있는 Dashboard에 **소식을 보내기만** 한다. Dashboard가 ContentScript에 보내는 지시는 없다. 칸을 다시 읽을 때는 방송 화면의 주소를 다시 넣을 뿐이다.
+- Popup은 치지직 로그인 여부를 판단하려고 브라우저 쿠키를 **직접** 본다. 조회 요청이 아니라 쿠키가 있는지만 보는 것이라 Background를 거치지 않는다 — [치지직](../Development-Viewpoint/Platforms/Chzzk.md#13-로그인-판단과-인증-쿠키) 참고.
 
 #### 1.3 통신 규칙
 
@@ -71,8 +73,9 @@ graph LR
 | Popup ↔ 브라우저 저장소 | 읽기·쓰기 | 시청 목록 · 즐겨찾기 · 설정 |
 | Popup → Dashboard 탭 | 요청 | 대시보드가 이미 열려 있을 때 변경사항 반영 |
 | Dashboard → Background | 요청·응답 | 생방송 상태 · 프로필 사진 조회 |
-| Dashboard ↔ 브라우저 저장소 | 읽기·쓰기 + 변경 감지 | 시청 목록·배치 읽기, 설정 변경 실시간 반영 |
-| Dashboard ↔ 방송 화면 | 지시·소식 | 음량 제어, 딜레이·광고 상태 수신, 넓은 화면 재시도 요청 |
+| Dashboard ↔ 브라우저 저장소 | 읽기·쓰기 + 설정 변경 감지 | 시청 목록·배치 읽기, 칸을 닫을 때 시청 목록·배치 쓰기, 설정 변경 실시간 반영 |
+| 방송 화면 → Dashboard | 소식 | 딜레이 · 넓은 화면 전환 결과 · 광고 상태 |
+| Popup → 브라우저 쿠키 | 읽기 | 치지직 로그인 여부 판단 |
 | Background ↔ 브라우저 | 쿠키 조회 · 네트워크 규칙 | 로그인 쿠키를 읽어 방송 화면·조회 요청에 실어 보냄. 대시보드가 띄운 방송 화면에서 플랫폼의 끼워 넣기 제한을 걷어 냄 |
 | Background → SOOP 전용 스크립트 | 스크립트 등록 | SOOP 방송 화면의 로컬 앱 연결 차단 |
 
@@ -114,24 +117,11 @@ sequenceDiagram
 
 #### 2.2 공유 상태
 
-Popup과 Dashboard가 직접 연결되어 있지 않을 때도 브라우저 저장소를 매개로 상태를 공유한다.
-
-| 저장하는 것 | 내용 | 주로 쓰는 쪽 |
-|---|---|---|
-| 시청 목록 | 띄울 채널 목록. **순서는 첫 배치를 만들 때만 쓴다** | Popup(읽기·쓰기) · Dashboard(읽기 + 칸을 닫을 때 쓰기) |
-| 즐겨찾기 트리 | 폴더 구조로 보관한 채널 | Popup |
-| 저장된 목록 | 이름을 붙여 보관한 시청 목록 한 벌들. 채널마다 고유 ID·닉네임·플랫폼을 담는다 | Popup |
-| 구 형식 즐겨찾기 | 예전 버전이 남긴 목록. 트리가 없을 때만 읽어 트리로 옮긴다 | Popup(읽기) |
-| 시스템 설정 | 자동 동기화 여부·기준 시간·방송 칸 채널 표시 방식. 읽을 때 예전 형식 값을 현재 체계로 바꾼다 | Popup(쓰기) · Dashboard(읽기, 변경 시 실시간 반영) |
-| 대시보드 배치 | 칸 구조와 비율 | Dashboard(읽기·쓰기) |
+Popup과 Dashboard가 직접 연결되어 있지 않을 때도 브라우저 저장소를 매개로 상태를 공유한다. 무엇을 어떤 모양으로 저장하고 누가 읽고 쓰는지는 [저장 데이터](../Physical-Viewpoint/DataSchema.md)에 있다.
 
 ### 기술 스택
 
-- Chrome 확장 프로그램 (Manifest V3)
-- 순수 JS — 프레임워크·번들러 없음
-- 네트워크 규칙 변조 — 확장 프로그램 화면에 로그인 쿠키를 실어 보내고, 방송 화면을 칸에 끼워 넣을 수 있게 하기 위해
-- 브라우저 저장소 — 시청 목록 / 즐겨찾기 / 설정 영구 보관
-- 화면 간 메시지 — 대시보드와 방송 화면 사이 음량 제어·상태 수신
+기술 선택과 그 근거는 [TechStack](../TechStack.md)에 있다.
 
 ### 참고: 구현 파일 위치
 
@@ -140,11 +130,11 @@ Popup과 Dashboard가 직접 연결되어 있지 않을 때도 브라우저 저�
 ```
 source/
 ├── manifest.json          권한 선언, content_scripts 등록
-├── background.js          [Background] 쿠키 주입 규칙, 팔로잉·생방송 API fetch 대리
-├── content.js             [ContentScript · 격리 월드] 볼륨 제어, 딜레이 측정, 와이드 모드, 채팅 접기
+├── background.js          [Background] 쿠키 주입 규칙, 끼워 넣기 제한 해제 규칙, 팔로잉·생방송 API fetch 대리
+├── content.js             [ContentScript · 격리 월드] 음소거 해제, 딜레이 측정, 와이드 모드, 채팅 접기, 광고 건너뛰기
 ├── content-soop-main.js   [ContentScript · MAIN 월드] SOOP 로컬 앱 연결 요청 차단
 ├── platforms/             [Platforms]
-│   ├── chzzk.js           치지직 어댑터 (생방송 상태, 프로필, 팔로잉, 채팅 URL)
+│   ├── chzzk.js           치지직 어댑터 (생방송 상태, 프로필, 팔로잉, 방송 주소)
 │   ├── soop.js            SOOP 어댑터 (생방송 상태, 프로필, 팔로잉)
 │   └── index.js           어댑터 진입점 (getPlatform)
 ├── popup.html             [Popup] 팝업 UI (시청목록 / 기타설정 2탭)
@@ -153,8 +143,12 @@ source/
 │   ├── storage.js         스토리지 로드/저장, 시청 목록 삭제·이동·복사, 즐겨찾기 트리 로드/저장
 │   ├── watchlist.js       시청 목록 렌더링, 직접 추가 이벤트
 │   ├── favorite-tree.js   즐겨찾기 폴더 트리 렌더링 및 드래그앤드롭
-│   ├── following.js       팔로잉 목록 불러오기 및 렌더링
-│   └── settings.js        설정 저장
+│   ├── following.js       팔로잉 목록 불러오기 및 렌더링, 치지직 로그인 쿠키 확인
+│   ├── settings.js        설정 저장
+│   ├── list-store.js      저장된 목록 저장소, 시청 목록 통째로 갈아끼우기
+│   ├── list-format.js     공유 글 만들기·읽기
+│   ├── saved-lists.js     저장된 목록 화면, 받은 글 덮어쓰기
+│   └── dashboard-sync.js  열린 대시보드 찾기·변경 알리기
 ├── dashboard.html         [Dashboard] 멀티뷰 대시보드 UI
 ├── dashboard/
 │   ├── main.js            DOM 초기화, 공유 상태, 방송 화면 소식 수신
