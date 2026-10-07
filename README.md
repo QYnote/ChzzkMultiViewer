@@ -1,6 +1,6 @@
 # MultiStream — Chrome 확장 프로그램
 
-> **다루는 내용:** 설치·사용 방법과 설계 문서 트리 진입점  
+> **다루는 내용:** 설치·사용 방법과 설계 문서 진입점  
 > **갱신 트리거:** 설치/사용 절차가 바뀌거나 하위 설계 문서 구성이 바뀔 때
 
 치지직(Chzzk), SOOP 등 인터넷 방송 스트리머 여러 명을 동시에 한 화면에서 시청할 수 있는 Chrome MV3 확장 프로그램입니다.
@@ -9,48 +9,34 @@
 
 ---
 
-## 아키텍처 설계 (ISO 42010)
+## 설계 문서
 
-이 프로젝트는 **ISO/IEC/IEEE 42010 표준**을 따르는 5가지 Viewpoint로 아키텍처를 설명합니다.  
-각 Viewpoint는 서로 다른 Stakeholder의 관심사를 다루며, 한 시스템을 다양한 각도에서 이해할 수 있게 합니다.
+설계 문서는 **완성본이 무엇을 하는가**(요구사항)와 **무엇으로 어떻게 만들었는가**(구현)를 폴더로 갈라 놓았습니다.[^1]
 
-**왜 여러 Viewpoint가 필요한가?**
-- 한 가지 관점만으로는 전체 시스템을 설명할 수 없습니다.
-- 사용자, 개발자, 테스터, 배포자 등 각자 관심사가 다릅니다.
-- 각 관점의 설명서를 분리하면 필요한 정보를 쉽게 찾을 수 있습니다.
+| 문서 | 다루는 내용 |
+|---|---|
+| [개요](document/Overview.md) | 목적 · 범위 · 사용자 · 용어 |
+| [요구사항](document/Requirements/README.md) | 요소 분해 트리, 기능별 기대 동작, 외부 인터페이스, 데이터, 제약, 품질 속성 |
+| [검증](document/Verification.md) | 무엇을 확인해야 완성으로 치는가 |
+| [구현](document/Implementation/README.md) | 기술 선택, 모듈, 빌드·배포, Git |
+| [Changelog](document/Changelog.md) | 버전별 바뀐 점 |
 
-| Viewpoint | 질문 | Stakeholder | 관심사 |
-|---|---|---|---|
-| [Use-Case](document/Use-Case-Viewpoint/README.md) | 사용자가 뭘 할 수 있는가? | 사용자, 기획자 | 기능 · 사용 시나리오 |
-| [Logical](document/Logical-Viewpoint/README.md) | 시스템이 어떻게 구성되는가? | 개발자, 설계자 | 계층 · 컴포넌트 · 계약 |
-| [Process](document/Process-Viewpoint/README.md) | 런타임에 어떻게 동작하는가? | 개발자, 테스터 | 흐름 · 상호작용 · 메시지 |
-| [Physical](document/Physical-Viewpoint/README.md) | 어디에 어떻게 배치되는가? | 배포자, 운영자 | 저장소 · 배포 환경 |
-| [Development](document/Development-Viewpoint/README.md) | 코드는 어떻게 구성되는가? | 개발자, 관리자 | 파일 구조 · 모듈 · 빌드 |
+| 이럴 때 | 여기부터 |
+|---|---|
+| 이 프로그램이 무엇을 하는지 알고 싶다 | [개요](document/Overview.md) → [요구사항](document/Requirements/README.md)의 분해 트리 |
+| 기능을 더하거나 고친다 | 해당 [기능](document/Requirements/Functions/README.md) 문서의 기대 동작 → [구현](document/Implementation/README.md)의 대응 표 |
+| 치지직·SOOP 쪽이 바뀌어 무언가 멈췄다 | [치지직](document/Requirements/External-Interfaces/Chzzk.md) · [SOOP](document/Requirements/External-Interfaces/Soop.md) → [확인과 진단](document/Implementation/Build-Deploy.md#확인과-진단) |
+| 배포한다 | [검증](document/Verification.md) → [빌드·배포](document/Implementation/Build-Deploy.md) · [Git](document/Implementation/Git.md) |
 
-### Viewpoint 이해 순서
-
-**신입 개발자라면:**
-1. Use-Case → "이 프로그램은 뭘 하는 도구인가?"
-2. Logical → "이 기능들을 어떤 컴포넌트로 구현했는가?"
-3. Development → "컴포넌트 코드는 어디에 있는가?"
-4. Process → "코드를 수정하면 어떻게 동작하는가?"
-5. Physical → "배포 환경은 어떻게 구성되어 있는가?"
-
-**기능을 추가하려면:**
-1. Use-Case → "새로운 기능을 어디에 추가할 것인가?"
-2. Logical → "어떤 컴포넌트를 만들어야 하는가?"
-3. Development → "코드는 어느 파일에 작성할 것인가?"
-4. Process → "실행 흐름은 어떻게 변하는가?"
-
-**배포 문제를 해결하려면:**
-1. Physical → "배포 환경은 어떻게 구성되어 있는가?"
-2. Development → "빌드 및 배포는 어떻게 설정했는가?"
+[^1]: 국제 표준 ISO/IEC/IEEE 29148(요구사항 명세)을 따른다. 요구사항 영역에는 언어·도구 이름을 쓰지 않아, 다른 언어로 다시 만들어도 그대로 맞는다. 2026-10-07 이전에는 ISO/IEC/IEEE 42010의 관점(Viewpoint) 다섯 개로 나눴으나, 이 규모에서는 관점 구조가 "무엇을"과 "어떻게"를 섞어 놓아 같은 내용이 여러 곳에 흩어지고 서로 어긋났다. 규모가 커지면 관점 구조를 구현 영역 안에 다시 들일 수 있다.
 
 ---
 
-## 설치 방법 (로컬 개발자 모드)
+## 설치 방법
 
-Chrome 웹스토어 출시 전 직접 설치 방법입니다.
+[크롬 웹 스토어 — MultiStream](https://chromewebstore.google.com/detail/multistream/aapiemaagmikgejakejdlicklbdjhnal)에서 **Chrome에 추가**를 누르면 됩니다. 업데이트는 자동으로 받습니다.
+
+**개발 중인 소스로 설치하려면** (웹 스토어 버전과는 다른 확장으로 취급되어 저장한 데이터가 이어지지 않습니다)
 
 1. 이 레포지토리를 다운로드(ZIP) 또는 클론합니다.
 2. Chrome 주소창에 `chrome://extensions` 입력
@@ -58,17 +44,17 @@ Chrome 웹스토어 출시 전 직접 설치 방법입니다.
 4. **압축해제된 확장 프로그램 로드** 클릭 → `source/` 폴더 선택
 5. 확장 아이콘이 toolbar에 나타나면 완료
 
-> 팔로잉 목록 연동과 자동 로그인은 **해당 플랫폼에 로그인된 상태**에서만 동작합니다.
+> 팔로잉 목록 연동과 로그인 상태 시청은 **해당 플랫폼에 로그인된 상태**에서만 동작합니다.
 
 ---
 
 ## 사용 방법
 
-1. 확장 아이콘을 눌러 팝업을 열고, 볼 스트리머를 고릅니다 — [팝업 화면](document/Use-Case-Viewpoint/Popup.md)
+1. 확장 아이콘을 눌러 팝업을 열고, 볼 스트리머를 고릅니다 — [볼 채널 정하기](document/Requirements/Functions/Channel-Selection.md)
 2. `멀티뷰 대시보드 열기`로 대시보드를 엽니다
-3. 칸을 나누고 크기와 자리를 조절해 시청합니다 — [대시보드 화면](document/Use-Case-Viewpoint/Dashboard.md)
+3. 칸을 나누고 크기와 자리를 조절해 시청합니다 — [여러 방송 동시 시청](document/Requirements/Functions/Multiview/README.md)
 
-각 화면에서 할 수 있는 일 전체는 [Use-Case Viewpoint](document/Use-Case-Viewpoint/README.md)에 정리되어 있습니다.
+할 수 있는 일 전체는 [기능](document/Requirements/Functions/README.md)에 정리되어 있습니다.
 
 ---
 
