@@ -9,7 +9,7 @@
 
 ### 빌드 환경
 
-번들러·트랜스파일러 없이 순수 JS/HTML/CSS로 작성되어 있어 별도 빌드 과정이 없다. `source/` 폴더를 그대로 크롬에 "압축해제된 확장 프로그램"으로 로드해서 실행한다 (설치 방법은 최상위 [README](../README.md) 참고).
+번들러·트랜스파일러 없이 순수 JS/HTML/CSS로 작성되어 있어 별도 빌드 과정이 없다. `source/` 폴더를 그대로 크롬에 "압축해제된 확장 프로그램"으로 로드해서 실행한다 (설치 방법은 최상위 [README](../../README.md) 참고).
 
 ### 배포 ZIP 생성
 
@@ -21,4 +21,4 @@
 ### 실패 대응
 
 - 크롬이 `chrome://extensions`에서 변경사항을 바로 인식하지 못하면 확장 카드의 새로고침 버튼으로 강제 갱신한다
-- 코드 변경이 서비스 워커([Background](Background.md))에 반영되지 않으면 `chrome://extensions`에서 서비스 워커를 재시작하거나 확장을 다시 로드한다
+- 코드 변경이 서비스 워커([Background](../Logical-Viewpoint/Components/Background.md))에 반영되지 않으면 `chrome://extensions`에서 서비스 워커를 재시작하거나 확장을 다시 로드한다
