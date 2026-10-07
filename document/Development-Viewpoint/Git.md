@@ -44,6 +44,6 @@
 | 문서 | 무엇을 |
 |---|---|
 | `manifest.json` | 버전 올리기 |
-| [README](../README.md) | `업데이트 예정 기능`에서 완료 표시된 항목 삭제 |
+| [README](../../README.md) | `업데이트 예정 기능`에서 완료 표시된 항목 삭제 |
 | [Changelog](Changelog.md) | 새 버전 항목 추가 (사용자가 체감하는 변화 위주, 내부 구현 용어 금지) |
 | 배포 ZIP | [Build](Build.md) 참고 |

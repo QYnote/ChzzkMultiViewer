@@ -3,12 +3,14 @@ importScripts('platforms/chzzk.js', 'platforms/soop.js', 'platforms/index.js');
 // 서비스 워커 가동 시 SameSite 쿠키 제한을 무력화하는 브라우저 네트워크 규칙 강제 바인딩
 chrome.runtime.onInstalled.addListener(() => {
   setupNetworkCookieRules();
+  allowChzzkFramingInDashboard();
   injectSessionCookies();
   registerSoopMainWorldScript();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   setupNetworkCookieRules();
+  allowChzzkFramingInDashboard();
   injectSessionCookies();
 });
 
@@ -40,6 +42,35 @@ function setupNetworkCookieRules() {
   // 이전 버전에서 등록된 Origin/Referer 변조 규칙 일괄 제거 (레거시 1001 포함)
   // 규칙이 활성화된 상태에서는 game.naver.com 등 타 도메인의 CORS가 깨지는 부작용 존재
   chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001, 2002] });
+}
+
+// 치지직은 "네이버 주소 안에서만 끼워 넣을 수 있다"는 규칙(frame-ancestors)을 응답 헤더에 싣는다.
+// 대시보드는 네이버 주소가 아니라서 이대로면 칸에 "차단되었습니다"가 뜬다.
+// 그래서 대시보드가 띄운 방송 화면에서만 그 헤더를 걷어 낸다.
+//
+// ⚠️ 범위를 좁히는 조건 셋(칸으로 띄운 화면 · 치지직 주소 · 우리 확장이 연 것)을 빼지 않는다.
+//    이 헤더는 다른 사이트가 치지직 화면을 몰래 덮어씌워 클릭을 가로채는 공격을 막는다.
+//    조건을 풀면 확장을 설치한 사용자가 다른 사이트에서 그 보호를 잃는다.
+// 로그인 쿠키와 묶지 않고 늘 걸어 둔다. 로그아웃 상태에서도 방송 화면은 떠야 한다.
+function allowChzzkFramingInDashboard() {
+  if (!chrome.declarativeNetRequest) return;
+  const CHZZK_FRAME_RULE_ID = 3001;
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [CHZZK_FRAME_RULE_ID],
+    addRules: [{
+      id: CHZZK_FRAME_RULE_ID,
+      priority: 2,
+      action: {
+        type: 'modifyHeaders',
+        responseHeaders: [{ header: 'Content-Security-Policy', operation: 'remove' }]
+      },
+      condition: {
+        requestDomains: ['chzzk.naver.com'],
+        initiatorDomains: [chrome.runtime.id],
+        resourceTypes: ['sub_frame']
+      }
+    }]
+  }).catch(e => console.error('치지직 끼워 넣기 규칙 등록 실패:', e));
 }
 
 // 브라우저의 로그인 쿠키를 읽어 iframe 및 API 요청에 직접 주입

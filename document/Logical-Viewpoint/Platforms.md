@@ -9,8 +9,8 @@
 
 | 문서 | 다루는 내용 |
 |---|---|
-| [치지직](Chzzk.md) | 치지직이 정한 주소·쿠키·화면 요소 |
-| [SOOP](Soop.md) | SOOP이 정한 주소·쿠키·화면 요소, 고화질 재생 대응 |
+| [치지직](../Development-Viewpoint/Platforms/Chzzk.md) | 치지직이 정한 주소·쿠키·화면 요소 |
+| [SOOP](../Development-Viewpoint/Platforms/Soop.md) | SOOP이 정한 주소·쿠키·화면 요소, 고화질 재생 대응 |
 
 ## 본문
 
