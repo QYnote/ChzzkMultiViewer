@@ -1,4 +1,4 @@
-[설계서](../../../README.md) › [Logical-Viewpoint](../../README.md) › [Components](../Components.md) › Dashboard
+[설계서](../../../README.md) › [Logical-Viewpoint](../README.md) › [Components](../Components.md) › Dashboard
 
 # Dashboard
 
@@ -118,7 +118,7 @@ sequenceDiagram
 
 ### 2. 화면 상태와 자동 처리
 
-사용자가 시키지 않아도 대시보드가 스스로 판단해서 하는 일이다. 사용자 눈에 어떻게 보이는지는 [대시보드 화면](DashboardScreen.md) 참고.
+사용자가 시키지 않아도 대시보드가 스스로 판단해서 하는 일이다. 사용자 눈에 어떻게 보이는지는 [대시보드 화면](../../Use-Case-Viewpoint/Dashboard.md) 참고.
 
 #### 2.1 초기화 안내 상태 전이
 
@@ -147,3 +147,4 @@ stateDiagram-v2
 
 **주의**
 - ⚠️ **광고 재생 중인 칸과 비방송 상태인 칸은 새로고침 판정에서 빠진다.** 광고 중에는 무신호 판정의 기준 시각을 계속 현재로 갱신해, 광고가 끝날 때까지 무신호로 보지 않는다.
+- ⚠️ 영상 신호는 방송 화면이 보내는 딜레이 소식으로 판단한다. 방송 화면은 **재생이 시작된 뒤부터** 딜레이를 보내므로, 칸이 열린 뒤 10초 안에 재생이 시작되지 않으면 무신호로 보고 새로고침한다. 까닭은 [ContentScript](ContentScript.md) 참고.

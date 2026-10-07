@@ -1,4 +1,4 @@
-[설계서](../../../README.md) › [Development-Viewpoint](../../README.md) › Platforms › SOOP
+[설계서](../../../README.md) › [Development-Viewpoint](../README.md) › Platforms › SOOP
 
 # SOOP
 

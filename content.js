@@ -36,9 +36,12 @@
     // 그 값을 채널별 상태로 저장해, 다시 불러올 때 화면에 보이는 상태와 어긋난다.
     v.muted = false;
 
-    startLatencyReporting(v);
-
-    const onPlaying = () => setTimeout(triggerWideMode, 2000);
+    // 딜레이는 재생이 시작된 뒤부터 잰다. 막 열린 순간은 재생 위치가 0이라
+    // 방송 끝 지점과의 차이가 수십 초로 나오고, 대시보드가 그 값을 보고 칸을 쓸데없이 다시 읽는다.
+    const onPlaying = () => {
+      startLatencyReporting(v);
+      setTimeout(triggerWideMode, 2000);
+    };
     if (!v.paused && v.currentTime > 0) {
       onPlaying();
     } else {
